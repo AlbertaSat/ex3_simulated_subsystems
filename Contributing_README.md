@@ -16,3 +16,6 @@ The following is a list of possible branch types:
 - Branches must implement/change only a single feature. Changes related to that feature across different layers of code is acceptable.
 - If you discover a bug unrelated to the feature you are working on, switch back to master, make a branch to fix the bug, then make a PR to merge that Bugfix. Chances are you aren't the only one experiencing the bug. You may rebase your development branch off the Bugfix branch.
 - Branches that do not describe what they are changing will not be accepted.
+
+### Code styling
+- All python files in this repository must follow pylint coding format and style. An automatic workflow action will test your code against theses standards automatically upon any request to merge with main. It is suggested to install a pylint linter extension in your IDE of choice to write code that follows these standards as you go. 

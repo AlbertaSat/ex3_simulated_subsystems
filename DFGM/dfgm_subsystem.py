@@ -11,7 +11,39 @@ import socket
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1801
 
-#TODO - Make classes w/ methods to simulate DFGM functionality
+'''TODO: Fill state with actual parameters + dummy values'''
+default_packet = {
+    "MagneticData": 1,
+    "HousekeepingData": 2
+}
+
+class DFGMSimulator:
+    '''TODO - Document class purpose'''
+
+    def __init__(self, client_socket):
+        self.client_socket = client_socket
+
+    def start(self):
+        '''TODO - Document function purpose'''
+        while True:
+            try:
+                packet = self.generate_packet()
+                # TO DO - Force packet to send every 1 second
+                self.send_packet(packet)
+            except BrokenPipeError:
+                print("Client disconnected abruptly")
+                break
+        self.client_socket.close()
+
+    def generate_packet(self):
+        '''TODO - Document function purpose'''
+        # packet = default_packet
+        packet = "packet" #temp
+        return packet
+
+    def send_packet(self, packet):
+        '''TODO - Document function purpose'''
+        self.client_socket.send(packet) # To do - figure out what format packet should be sent in (maybe bytes, string, etc.)
 
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
@@ -31,7 +63,8 @@ if __name__ == "__main__":
                 conn, addr = s.accept()
                 with conn:
                     print(f"Connected with {addr}")
-                    #TODO - Start DFGM functionality here
+                    simulator = DFGMSimulator(conn)
+                    simulator.start()
             except BrokenPipeError as e:
                 print(f"Client connection closed: {e}")
 

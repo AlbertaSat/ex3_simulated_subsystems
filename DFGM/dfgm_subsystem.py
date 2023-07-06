@@ -1,4 +1,4 @@
-"""This python program represents a simulated version of the EPS payload component for ExAlta3.
+"""This python program represents a simulated version of the DFGM payload component for ExAlta3.
 
 #TODO - explain how dfgm file works
 

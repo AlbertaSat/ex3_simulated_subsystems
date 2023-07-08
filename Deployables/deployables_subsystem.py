@@ -35,13 +35,14 @@ import sys
 import threading
 import random
 
-sys.path.append('..') # Add parent directory to path so we can import the socket_stuff module
+sys.path.append('..') # Add parent directory to path so we can import modules from there
 import socket_stuff # pylint: disable=C0413
+import command_handler # pylint: disable=C0413
 
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1811
-COMMAND_DELIMITER = ':'
+
 
 BURNWIRE_SET_COMMAND = "burnwire_set"
 SWITCH_REQUEST_COMMAND = "switch_request"
@@ -175,9 +176,9 @@ class RequestSwitchCommand():  # pylint: disable=too-few-public-methods
             return f"{params[0]}:{deployables_state[deployable_component][SWITCH_PIN]}\0"
         return "ERROR: Invalid switch request command \0"
 
-# Factory pattern: Command Factory
-class CommandFactory:  # pylint: disable=too-few-public-methods
-    """Factory class to create command objects based on command type"""
+
+class DeployablesCommandFactory(command_handler.CommandFactory):  # pylint: disable=too-few-public-methods
+    """Extends abstract CommandFactory class to create command objects based on command type"""
 
     def create_command(self, command_type):
         """Create a command object based on the command type
@@ -195,83 +196,22 @@ class CommandFactory:  # pylint: disable=too-few-public-methods
         return None
 
 
-class DeployableCommandHandler():
-    """This takes a client socket arg and uses it to listen for commands"""
-
-    def __init__(self, client_socket):
-        self.client_socket = client_socket
-
-    def handle_command(self):
-        """Listen for commands from the client socket and processes them"""
-        while True:
-            try:
-                data = self.client_socket.recv(1024).decode().strip()
-                if data:
-                    print("RAW data received: " + data, flush=True)
-                    parsed_command = self.parse_command(data)
-                    self.process_command(parsed_command)
-
-                else:
-                    break
-
-            except BrokenPipeError:
-                print("Client disconnected abruptly", flush=True)
-                break
-
-        self.client_socket.close()
-
-    def parse_command(self, command):
-        """Parse the command into consituent command type, and associated data
-
-        Args:
-            command (str): A decoded and stripped string containing the command
-
-        Returns:
-            str: A parsed string containing the command
-        """
-
-        return command.split(COMMAND_DELIMITER)
-
-    def process_command(self, command):
-        """Process command data based on the command type
-
-        Command types are: set and request. Use the command factory to create the 
-        associated commands. Then execute the command and send the response back to the client.
-
-        Args:
-            command_type (str): The type of command to be processed
-            params (list): The associated data for the command
-
-        Returns:
-            str: A string containing the response to the command
-        """
-
-        command_type = command[0]
-        params = command[1:]
-
-        command_factory = CommandFactory()
-        command_obj = command_factory.create_command(command_type)
-
-        if command_obj is not None:
-            response = command_obj.execute(params)
-        else:
-            response = "ERROR: Invalid command type \0"
-
-        try:
-            self.client_socket.sendall(response.encode())
-
-        except BrokenPipeError:
-            print("Client disconnected abruptly")
-            self.client_socket.close()
-
-
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
 
     print(f"\nStarting Deployables subsystem on port {PORT}\n", flush=True)
 
-    socket_stuff.create_socket_and_listen(DEFAULT_HOST, PORT, DeployableCommandHandler)
+    command_factory = DeployablesCommandFactory()
+
+    # Pass the command factory concrete implementation into the command handler
+    # Initially the 
+    command_handler = command_handler.CommandHandler(command_factory)
+
+    # Create a socket and listen for client connections
+    socket_stuff.create_socket_and_listen(DEFAULT_HOST, PORT, command_handler)
+
+
 
 # The following is program metadata
 __author__ = "Devin Headrick"

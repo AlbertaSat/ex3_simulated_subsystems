@@ -4,7 +4,7 @@
 import socket
 
 
-def create_socket_and_listen(host, port, command_handler):
+def create_socket_and_listen(host, port, command_handler_obj):
     """Create a socket and bind it to the port. Listen indefinitely for client connections
 
     Args:
@@ -27,7 +27,7 @@ def create_socket_and_listen(host, port, command_handler):
                 conn, addr = socket_obj.accept()
                 with conn:
                     print(f"Connected with {addr}", flush=True)
-                    command_handler_obj = command_handler(conn)
+                    command_handler_obj.set_client_socket(conn)
                     command_handler_obj.handle_command()
 
             except KeyboardInterrupt:

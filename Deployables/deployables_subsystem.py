@@ -32,9 +32,12 @@ Usage: deployables_subsystem.py
 """
 
 import sys
-import socket
 import threading
 import random
+
+sys.path.append('..') # Add parent directory to path so we can import the socket_stuff module
+import socket_stuff # pylint: disable=C0413
+
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1811
@@ -268,23 +271,7 @@ if __name__ == "__main__":
 
     print(f"\nStarting Deployables subsystem on port {PORT}\n", flush=True)
 
-    # Create a socket and bind it to the port. Listen indefinitely for client connections
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        # Tell OS to reuse socket addr if not previously closed
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind((DEFAULT_HOST, int(PORT)))
-        s.listen()
-        while True:
-            try:
-                conn, addr = s.accept()
-                with conn:
-                    print(f"Connected with {addr}", flush=True)
-                    handler = DeployableCommandHandler(conn)
-                    handler.handle_command()
-
-            except BrokenPipeError as e:
-                print(f"Client connection closed: {e}", flush=True)
-                s.close()
+    socket_stuff.create_socket_and_listen(DEFAULT_HOST, PORT, DeployableCommandHandler)
 
 # The following is program metadata
 __author__ = "Devin Headrick"

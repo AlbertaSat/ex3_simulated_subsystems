@@ -29,6 +29,8 @@ For now you can test your commands using netcat (nc) from the command line, and 
 to the socket from a seperate text file. I have also added a brief bash script to test this program.
 
 Usage: deployables_subsystem.py 
+
+Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
 """
 
 import sys
@@ -205,15 +207,14 @@ if __name__ == "__main__":
     command_factory = DeployablesCommandFactory()
 
     # Pass the command factory concrete implementation into the command handler
-    # Initially the 
     command_handler = command_handler.CommandHandler(command_factory)
 
     # Create a socket and listen for client connections
     socket_stuff.create_socket_and_listen(DEFAULT_HOST, PORT, command_handler)
 
 
-
-# The following is program metadata
+# pylint: disable=duplicate-code
+# no error
 __author__ = "Devin Headrick"
 __copyright__ = """
     Copyright 2023 [Devin Headrick]

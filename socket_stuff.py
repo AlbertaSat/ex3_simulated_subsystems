@@ -1,5 +1,8 @@
 
-"""This module contains functions for creating a socket and listening for client connections"""
+"""This module contains functions for creating a socket and listening for client connections
+
+Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
+"""
 
 import socket
 
@@ -40,7 +43,8 @@ def create_socket_and_listen(host, port, command_handler_obj):
                 socket_obj.close()
 
 
-# The following is program metadata
+# pylint: disable=duplicate-code
+# no error
 __author__ = "Devin Headrick"
 __copyright__ = """
     Copyright 2023 [Devin Headrick]

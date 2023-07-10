@@ -1,6 +1,9 @@
 """ This modules contains classes for handling commands. 
+
 Commands are strings sent over TCP sockets. 
 They are parsed into a command type and associated data.
+
+Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
 """
 
 # import to support abstract classes
@@ -83,9 +86,6 @@ class CommandHandler():
     def process_command(self, command):
         """Process command data based on the command type
 
-        Command types are: set and request. Use the command factory to create the 
-        associated commands. Then execute the command and send the response back to the client.
-
         Args:
             command_type (str): The type of command to be processed
             params (list): The associated data for the command
@@ -113,7 +113,8 @@ class CommandHandler():
             self.client_socket.close()
 
 
-# The following is program metadata
+# pylint: disable=duplicate-code
+# no error
 __author__ = "Devin Headrick"
 __copyright__ = """
     Copyright 2023 [Devin Headrick]

@@ -21,6 +21,8 @@ For now you can test your commands using netcat (nc) from the command line, and 
 to the socket from a seperate text file.
 
 Usage: ESP_component.py non-default_port_num 
+
+Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
 """
 
 import sys
@@ -218,7 +220,8 @@ if __name__ == "__main__":
                 print(f"Client connection closed: {e}")
 
 
-# The following is program metadata
+# pylint: disable=duplicate-code
+# no error
 __author__ = "Devin Headrick"
 __copyright__ = """
     Copyright (C) 2023, University of Alberta.

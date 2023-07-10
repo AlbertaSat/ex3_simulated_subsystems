@@ -44,7 +44,7 @@ default_packet = {
     "STX": 0x02, # Start of Text
     "PID": 1, # Packet ID
     "Packet Type": 1, # Type of data inside packet
-    "Packet Length": 1, # In bytes
+    "Packet Length": 1248, # In bytes
     "FS": 100, # Sampling Frequency
     "PPS Offset": 1, # "U32 offset in ticks from last PPS edge"
     "HK_data": house_keeping_data,

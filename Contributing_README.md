@@ -19,3 +19,4 @@ The following is a list of possible branch types:
 
 ### Code styling
 - All python files in this repository must follow pylint coding format and style. An automatic workflow action will test your code against theses standards automatically upon any request to merge with main. It is suggested to install a pylint linter extension in your IDE of choice to write code that follows these standards as you go. 
+- Ensure that every source file written has associated 'author' and 'copyright' metadata included in the file (for now it is found in the bottom, two lines after all code). Because these items will exist in every source file pylint is explicitly told to ignore them

@@ -11,10 +11,49 @@ import socket
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1801
 
-'''TODO: Fill state with actual parameters + dummy values'''
+house_keeping_data = {
+    "Core Voltage": 5000, # HK 0 (mV)
+    "Sensor Temperature": 25, # HK 1 (deg C)
+    "Reference Temperature": 25, # HK 2 (deg C)
+    "Board Temperature": 25, # HK 3 (deg C)
+    "Positive Rail Voltage": 5000, # HK 4 (mV)
+    "Input Voltage": 5000, # HK 5 (mV)
+    "Reference Voltage": 5000, # HK 6 (mV)
+    "Input Current": 1000, # HK 7 (mA)
+    "Reserved 1": 0, # HK 8 (Unused)
+    "Reserved 2": 0, # HK 9 (Unused)
+    "Reserved 3": 0, # HK 10 (Unused)
+    "Reserved 4": 0, # HK 11 (Unused)
+}
+
+# Contains raw data to be processed by OBC
+magnetic_field_tuple = {
+    "x_DAC": 1, 
+    "x_ADC": 2,
+    "y_DAC": 3,
+    "y_ADC": 4,
+    "z_DAC": 5,
+    "z_ADC": 6
+}
+
+magnetic_field_data = [magnetic_field_tuple] * 100
+
+'''TODO: Force specific byte sizes on the packet and its contents'''
 default_packet = {
-    "MagneticData": 1,
-    "HousekeepingData": 2
+    "DLE": 0x10, # Data Link Escape
+    "STX": 0x02, # Start of Text
+    "PID": 1, # Packet ID
+    "Packet Type": 1, # Type of data inside packet
+    "Packet Length": 1, # In bytes
+    "FS": 100, # Sampling Frequency
+    "PPS Offset": 1, # "U32 offset in ticks from last PPS edge"
+    "HK_data": house_keeping_data,
+    "mag_data": magnetic_field_data, 
+    "Board ID": 1,
+    "Sensor ID": 1,
+    "Reserved": 1, # Unused, but reserved for future use
+    "ETX": 0x03, # End of Text
+    "CRC": 0x0000 # Packet info
 }
 
 class DFGMSimulator:

@@ -7,6 +7,7 @@ Usage: DFGM_component.py non-default_port_num
 
 import sys
 import socket
+import time
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
@@ -61,14 +62,17 @@ class DFGMSimulator:
 
     def __init__(self, client_socket):
         self.client_socket = client_socket
+        self.is_first_packet = True
+        self.packet = None
 
     def start(self):
         '''TODO - Document function purpose'''
         while True:
             try:
-                packet = self.generate_packet()
-                # TO DO - Force packet to send every 1 second
-                self.send_packet(packet)
+                self.generate_packet()
+                # self.send_packet()
+                self.print_packet()
+                time.sleep(1) # Force packet to send every 1 second
             except BrokenPipeError:
                 print("Client disconnected abruptly")
                 break
@@ -76,19 +80,43 @@ class DFGMSimulator:
 
     def generate_packet(self):
         '''TODO - Document function purpose'''
-        # packet = default_packet
-        packet = "packet" #temp
-        return packet
+        if self.is_first_packet:
+            self.packet = default_packet
+            self.is_first_packet = False
+        else:
+            self.packet["PID"] += 1
 
-    def send_packet(self, packet):
+    def send_packet(self):
         '''TODO - Document function purpose'''
-        self.client_socket.send(packet) # To do - figure out what format packet should be sent in (maybe bytes, string, etc.)
+        self.client_socket.send(self.packet) # To do - figure out what format packet should be sent in (maybe bytes, string, etc.)
+    
+    def print_packet(self):
+        '''TODO - Document function purpose'''
+        for param in self.packet:
+            if param == "HK_data":
+                # Format HK data in a neat way
+                hk_data = self.packet[param]
+                print("HK Data:")
+                for hk_param in hk_data:
+                    print("\t" + str(hk_param) + ": " + str(hk_data[hk_param]))
+            elif param == "mag_data":
+                # Format Mag data in a "neat" way
+                print("Mag Data:")
+                print("\t" + str(self.packet[param][0]) + " * 100 samples") # all dummy xyz tuples are same
+            else:
+                print(str(param) + ": " + str(self.packet[param]))
+        print("\n\n\n") # Separate packets in console
 
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
 
     print(f"Starting DFGM subsystem on port {PORT}")
+
+    # debug
+    conn = 30
+    simulator = DFGMSimulator(conn)
+    simulator.start()
 
     # Create a socket and bind it to the port. Listen indefinitely for client connections
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

@@ -9,7 +9,7 @@ import sys
 import socket
 
 DEFAULT_HOST = '127.0.0.1'
-DEFAULT_PORT = 1801
+DEFAULT_PORT = 1802
 
 house_keeping_data = {
     "Core Voltage": 5000, # HK 0 (mV)

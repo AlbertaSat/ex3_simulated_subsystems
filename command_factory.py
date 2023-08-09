@@ -6,6 +6,7 @@ Copyright 2023 [Abhishek Naik]. Licensed under the Apache License, Version 2.0
 
 # Factory pattern: Command Factory
 class CommandFactory:
+    """A factory class to create command objects based on command type."""
 
     def __init__(self, subsystem):
         self.subsystem = subsystem
@@ -32,7 +33,7 @@ class CommandFactory:
             str: A string containing the requested parameter and its associated value
         """
         print("Update command received: " + params[0])
-        if params and len(params) == 2 and params[0] in self.updatable_parameters:
+        if params and len(params) == 2 and params[0] in self.subsystem.updatable_parameters:
             self.subsystem.state[params[0]] = params[1]
             return f"Updated {params[0]} to {params[1]}\n"
         return "ERROR: update command \n"
@@ -46,7 +47,7 @@ class CommandFactory:
             str: A string containing the return value from the function call
         """
         print("Execute command received: " + params[0])
-        if params and len(params) == 1 and params[0] in self.executable_commands:
+        if params and len(params) == 1 and params[0] in self.subsystem.executable_commands:
             return f"Command {params[0]} executed \n"
         return "ERROR: Invalid execute command \n"
 

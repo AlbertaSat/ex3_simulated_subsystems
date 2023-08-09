@@ -55,7 +55,6 @@ class IRISSubsystem:
             'TempGATE': self.temp_gate,
             'NumImages': self.num_images,
             'SoftwareVersion': self.software_version,
-            # ToDo: add time
         }
         self.updatable_parameters = ['PowerStatus', 'SensorStatus']
         self.executable_commands = ['TakeImage', 'SetTime']
@@ -70,7 +69,6 @@ class IRISCommandFactory(CommandFactory):
             if params[0] == 'TakeImage':
                 self.subsystem.state['NumImages'] += 1
                 print('Increased NumImages by 1')
-                # ToDo: do more stuff here
             return f"Command {params[0]} executed \n"
         return "ERROR: Invalid execute command \n"
 

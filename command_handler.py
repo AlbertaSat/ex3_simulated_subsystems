@@ -1,6 +1,6 @@
-""" This modules contains classes for handling commands. 
+""" This modules contains classes for handling commands.
 
-Commands are strings sent over TCP sockets. 
+Commands are strings sent over TCP sockets.
 They are parsed into a command type and associated data.
 
 Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
@@ -30,9 +30,9 @@ class CommandFactory(): # pylint: disable=too-few-public-methods
 
 class CommandHandler():
     """This takes a client socket arg and uses it to listen for commands
-    
-    This class can be used by various subsystems that are 'intelligent'.  
-    They may listen for commands from the client socket and process them. 
+
+    This class can be used by various subsystems that are 'intelligent'.
+    They may listen for commands from the client socket and process them.
     """
     client_socket = None
 
@@ -43,7 +43,7 @@ class CommandHandler():
         """Set the client socket.
 
         This method is used to set the client socket after the object has been created.
-        Because connection is handled by socket_stuff module, the client socket may 
+        Because connection is handled by socket_stuff module, the client socket may
         change after the object is created.
 
         Args:
@@ -97,11 +97,10 @@ class CommandHandler():
         command_type = command[0]
         params = command[1:]
 
-        # command_factory = CommandFactory()
         command_obj = self.command_factory.create_command(command_type)
 
         if command_obj is not None:
-            response = command_obj.execute(params)
+            response = command_obj(params)
         else:
             response = "ERROR: Invalid command type \0"
 

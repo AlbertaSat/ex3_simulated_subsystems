@@ -209,7 +209,6 @@ if __name__ == "__main__":
     # Pass the command factory concrete implementation into the command handler
     command_handler = command_handler.CommandHandler(command_factory)
 
-    # Create a socket and listen for client connections
     socket_stuff.create_socket_and_listen(DEFAULT_HOST, PORT, command_handler)
 
 

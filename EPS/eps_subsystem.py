@@ -91,25 +91,6 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
                   " \n Reset State to default values.")
 
 
-class EPSCommandFactory(CommandFactory):  # pylint: disable=too-few-public-methods
-    """Exteneds parent factory class with update, request, and execute commands."""
-
-    def command_execute(self, params=None):
-        """Calls an associated function for the provided execute parameter if it exists.
-
-        Args:
-            params (list): A list of parameters to be used by the command
-
-        Returns:
-            str: A string containing the response to the command
-        """
-        print("Execute command received: " + params[0])
-        if params and len(params) == 1 and params[0] in self.subsystem.executable_commands:
-            self.subsystem.executable_commands[params[0]]()
-            return f"Command {params[0]} executed \n"
-        return "ERROR: Invalid execute command \n"
-
-
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
@@ -117,7 +98,7 @@ if __name__ == "__main__":
     print(f"Starting EPS subsystem on port {PORT}")
 
     # Concrete factory instance relies on subsystem class that contains associated state and fxns
-    command_factory = EPSCommandFactory(EPSSubsystem())
+    command_factory = CommandFactory(EPSSubsystem())
 
     command_handler = CommandHandler(command_factory)
 

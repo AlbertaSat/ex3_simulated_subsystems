@@ -35,11 +35,10 @@ DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
 
 
-class IRISSubsystem: # pylint: disable=too-few-public-methods disable=too-many-instance-attributes
+class IRISSubsystem: # pylint: disable=too-many-instance-attributes
     """Holds the state of the IRIS subsystem.
 
     Tuples are provided that define the executable commands and updatable parameters.
-
     """
     def __init__(self):
         self.power_status = 1           # 1 means powered on, 0 means off
@@ -68,12 +67,13 @@ class IRISSubsystem: # pylint: disable=too-few-public-methods disable=too-many-i
         }
 
     def take_image(self):
+        """Simulates taking a picture using the IRIS camera."""
         self.state['NumImages'] += 1
         print('Increased NumImages by 1')
 
     def set_time(self):
+        """Simulates setting the time for the IRIS subsystem."""
         print('Not implemented yet')
-        return
 
 
 if __name__ == "__main__":

@@ -51,6 +51,7 @@ class CommandFactory:
         """
         print("Execute command received: " + params[0])
         if params and len(params) == 1 and params[0] in self.subsystem.executable_commands:
+            self.subsystem.executable_commands[params[0]]()
             return f"Command {params[0]} executed \n"
         return "ERROR: Invalid execute command \n"
 

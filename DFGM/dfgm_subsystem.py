@@ -62,40 +62,6 @@ default_packet = {
     "CRC": 0x0000 # Packet info
 }
 
-# Force each house keeping data value to be in uint16 form
-house_keeping_bytes = bytearray(b'')
-for HK in house_keeping_data:
-    house_keeping_bytes.extend(pack("H", house_keeping_data[HK]))
-
-# Force each magnetic field coordinate value to be in uint16 form
-magnetic_field_bytes = bytearray(b'')
-for sample in magnetic_field_data:
-    for coordinate in sample:
-        magnetic_field_bytes.extend(pack("H", sample[coordinate]))
-
-# Combine and format default packet bytes
-default_packet_bytes = bytearray(b'')
-for packet_section in default_packet:
-    packet_section_value = default_packet[packet_section]
-    if packet_section in ["DLE", "STX", "PID", "Packet Type", "ETX"]:
-        # Force these data packet sections to be in uint8 form
-        default_packet_bytes.extend(pack("B", packet_section_value))
-    elif packet_section in ["Reserved 1", "Reserved 2", "Reserved 3", "Reserved 4", "Reserved 5"]:
-        # Force these data packet sections to be in uint8 form
-        default_packet_bytes.extend(pack("B", packet_section_value))
-    elif packet_section in ["Packet Length", "FS", "Board ID", "Sensor ID", "CRC"]:
-        # Force these data packet sections to be in uint16 form
-        default_packet_bytes.extend(pack("H", packet_section_value))
-    elif packet_section in ["PPS Offset"]:
-        # Force these data packet sections to be in uint32 form
-        default_packet_bytes.extend(pack("L", packet_section_value))
-    elif packet_section in ["HK_data"]:
-        # Append previously packed bytes to this array of bytes
-        default_packet_bytes.extend(house_keeping_bytes)
-    elif packet_section in ["mag_data"]:
-        # Append previously packed bytes to this array of bytes
-        default_packet_bytes.extend(magnetic_field_bytes)
-
 class DFGMSimulator:
     '''TODO - Document class purpose'''
 
@@ -103,12 +69,20 @@ class DFGMSimulator:
         self.client_socket = client_socket
         self.is_first_packet = True
         self.packet = None
+        self.house_keeping_bytes = None
+        self.magnetic_field_bytes = None
+        self.packet_bytes = bytearray(b'')
 
     def start(self):
         '''TODO - Document function purpose'''
         while True:
             try:
-                self.generate_packet()
+                if self.is_first_packet:
+                    self.generate_packet()
+                    self.is_first_packet = False
+                else:
+                    self.update_packet()
+                self.format_packet()
                 # self.send_packet()
                 self.print_packet()
                 time.sleep(1) # Force packet to send every 1 second
@@ -122,8 +96,46 @@ class DFGMSimulator:
         if self.is_first_packet:
             self.packet = default_packet
             self.is_first_packet = False
-        else:
-            self.packet["PID"] += 1
+    
+    def update_packet(self):
+        '''TODO - Document function purpose'''
+        self.packet["PID"] += 1
+
+    def format_packet(self):
+        '''TODO - Document function purpose'''
+        # Force each house keeping data value to be in uint16 form
+        self.house_keeping_bytes = bytearray(b'')
+        for HK in house_keeping_data:
+            self.house_keeping_bytes.extend(pack("H", house_keeping_data[HK]))
+
+        # Force each magnetic field coordinate value to be in uint16 form
+        self.magnetic_field_bytes = bytearray(b'')
+        for sample in magnetic_field_data:
+            for coordinate in sample:
+                self.magnetic_field_bytes.extend(pack("H", sample[coordinate]))
+
+        # Combine and format default packet bytes
+        self.packet_bytes = bytearray(b'')
+        for packet_section in default_packet:
+            packet_section_value = default_packet[packet_section]
+            if packet_section in ["DLE", "STX", "PID", "Packet Type", "ETX"]:
+                # Force these data packet sections to be in uint8 form
+                self.packet_bytes.extend(pack("B", packet_section_value))
+            elif packet_section in ["Reserved 1", "Reserved 2", "Reserved 3", "Reserved 4", "Reserved 5"]:
+                # Force these data packet sections to be in uint8 form
+                self.packet_bytes.extend(pack("B", packet_section_value))
+            elif packet_section in ["Packet Length", "FS", "Board ID", "Sensor ID", "CRC"]:
+                # Force these data packet sections to be in uint16 form
+                self.packet_bytes.extend(pack("H", packet_section_value))
+            elif packet_section in ["PPS Offset"]:
+                # Force these data packet sections to be in uint32 form
+                self.packet_bytes.extend(pack("L", packet_section_value))
+            elif packet_section in ["HK_data"]:
+                # Append previously packed bytes to this array of bytes
+                self.packet_bytes.extend(self.house_keeping_bytes)
+            elif packet_section in ["mag_data"]:
+                # Append previously packed bytes to this array of bytes
+                self.packet_bytes.extend(self.magnetic_field_bytes)
 
     def send_packet(self):
         '''TODO - Document function purpose'''
@@ -132,8 +144,9 @@ class DFGMSimulator:
 
     def print_packet(self):
         '''TODO - Document function purpose'''
-        print("Measured packet size: " + str(len(default_packet_bytes)) + "\n")
-        print("Packet contents: ")
+        print("Measured packet size: " + str(len(self.packet_bytes)) + "\n")
+        print("Packet Bytes (Hexadecimal): \n\n" + self.packet_bytes.hex() + "\n")
+        print("Packet contents: \n")
 
         for param in self.packet:
             if param == "HK_data":

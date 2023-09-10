@@ -8,6 +8,7 @@ Usage: DFGM_component.py non-default_port_num
 import sys
 import socket
 import time
+from struct import pack
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
@@ -30,16 +31,16 @@ house_keeping_data = {
 # Contains raw data to be processed by OBC
 magnetic_field_tuple = {
     "x_DAC": 1, 
-    "x_ADC": 2,
-    "y_DAC": 3,
-    "y_ADC": 4,
-    "z_DAC": 5,
-    "z_ADC": 6
+    "x_ADC": 1,
+    "y_DAC": 2,
+    "y_ADC": 2,
+    "z_DAC": 3,
+    "z_ADC": 3
 }
 
+# There are 100 samples in each packet
 magnetic_field_data = [magnetic_field_tuple] * 100
 
-'''TODO: Force specific byte sizes on the packet and its contents'''
 default_packet = {
     "DLE": 0x10, # Data Link Escape
     "STX": 0x02, # Start of Text
@@ -52,10 +53,48 @@ default_packet = {
     "mag_data": magnetic_field_data, 
     "Board ID": 1,
     "Sensor ID": 1,
-    "Reserved": 1, # Unused, but reserved for future use
+    "Reserved 1": 55, # Reserverd 1-5 are unused, but reserved for future use
+    "Reserved 2": 55,
+    "Reserved 3": 55,
+    "Reserved 4": 55,
+    "Reserved 5": 55,
     "ETX": 0x03, # End of Text
     "CRC": 0x0000 # Packet info
 }
+
+# Force each house keeping data value to be in uint16 form
+house_keeping_bytes = bytearray(b'')
+for HK in house_keeping_data:
+    house_keeping_bytes.extend(pack("H", house_keeping_data[HK]))
+
+# Force each magnetic field coordinate value to be in uint16 form
+magnetic_field_bytes = bytearray(b'')
+for sample in magnetic_field_data:
+    for coordinate in sample:
+        magnetic_field_bytes.extend(pack("H", sample[coordinate]))
+
+# Combine and format default packet bytes
+default_packet_bytes = bytearray(b'')
+for packet_section in default_packet:
+    packet_section_value = default_packet[packet_section]
+    if packet_section in ["DLE", "STX", "PID", "Packet Type", "ETX"]:
+        # Force these data packet sections to be in uint8 form
+        default_packet_bytes.extend(pack("B", packet_section_value))
+    elif packet_section in ["Reserved 1", "Reserved 2", "Reserved 3", "Reserved 4", "Reserved 5"]:
+        # Force these data packet sections to be in uint8 form
+        default_packet_bytes.extend(pack("B", packet_section_value))
+    elif packet_section in ["Packet Length", "FS", "Board ID", "Sensor ID", "CRC"]:
+        # Force these data packet sections to be in uint16 form
+        default_packet_bytes.extend(pack("H", packet_section_value))
+    elif packet_section in ["PPS Offset"]:
+        # Force these data packet sections to be in uint32 form
+        default_packet_bytes.extend(pack("L", packet_section_value))
+    elif packet_section in ["HK_data"]:
+        # Append previously packed bytes to this array of bytes
+        default_packet_bytes.extend(house_keeping_bytes)
+    elif packet_section in ["mag_data"]:
+        # Append previously packed bytes to this array of bytes
+        default_packet_bytes.extend(magnetic_field_bytes)
 
 class DFGMSimulator:
     '''TODO - Document class purpose'''
@@ -88,10 +127,14 @@ class DFGMSimulator:
 
     def send_packet(self):
         '''TODO - Document function purpose'''
-        self.client_socket.send(self.packet) # To do - figure out what format packet should be sent in (maybe bytes, string, etc.)
-    
+        # To do - figure out what format packet should be sent in (maybe bytes, string, etc.)
+        self.client_socket.send(self.packet)
+
     def print_packet(self):
         '''TODO - Document function purpose'''
+        print("Measured packet size: " + str(len(default_packet_bytes)) + "\n")
+        print("Packet contents: ")
+
         for param in self.packet:
             if param == "HK_data":
                 # Format HK data in a neat way
@@ -102,7 +145,8 @@ class DFGMSimulator:
             elif param == "mag_data":
                 # Format Mag data in a "neat" way
                 print("Mag Data:")
-                print("\t" + str(self.packet[param][0]) + " * 100 samples") # all dummy xyz tuples are same
+                # all dummy xyz tuples are same
+                print("\t" + str(self.packet[param][0]) + " * 100 samples")
             else:
                 print(str(param) + ": " + str(self.packet[param]))
         print("\n\n\n") # Separate packets in console
@@ -111,11 +155,11 @@ if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
 
-    print(f"Starting DFGM subsystem on port {PORT}")
+    print(f"Starting DFGM subsystem on port {PORT}\n")
 
     # debug
-    conn = 30
-    simulator = DFGMSimulator(conn)
+    CONN = 30
+    simulator = DFGMSimulator(CONN)
     simulator.start()
 
     # Create a socket and bind it to the port. Listen indefinitely for client connections

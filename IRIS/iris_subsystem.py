@@ -25,6 +25,7 @@ Copyright 2023 [Abhishek Naik]. Licensed under the Apache License, Version 2.0
 """
 
 
+import time
 import sys
 sys.path.append("../ex3_simulated_subsystems")
 from socket_stuff import create_socket_and_listen   # pylint: disable=C0413
@@ -38,7 +39,8 @@ DEFAULT_STATE_VALUES = {                # at some point, we should simulate temp
             'PowerStatus': 1,           # 1 means powered on, 0 means off
             'SensorStatus': 0,          # 1 means sensors are on, 0 means off
             'NumImages': 0,             # number of images
-            'MaxNumImages': 20          # maximum images that can be stored
+            'MaxNumImages': 20,         # maximum images that can be stored
+            'DateTime': '1694902684'    # arbitrary value for now (time at which this was written)
         }
 
 
@@ -57,12 +59,12 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             'TempNIR': 25,              # in degree Celsius
             'TempGATE': 25,             # in degree Celsius
             'TempFLASH': 25,            # in degree Celsius
-            'SoftwareVersion': 1.0
+            'SoftwareVersion': 1.0,
+            'Time': time.time()
         }
-        self.updatable_parameters = ['PowerStatus', 'SensorStatus']
+        self.updatable_parameters = ['PowerStatus', 'SensorStatus', 'Time']
         self.executable_commands = {
             'TakeImage': self.take_image,
-            'SetTime': self.set_time,
             'Reset': self.reset
         }
 
@@ -70,10 +72,6 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         """Simulates taking a picture using the IRIS camera."""
         self.state['NumImages'] += 1
         print('Increased NumImages by 1')
-
-    def set_time(self):
-        """Simulates setting the time for the IRIS subsystem."""
-        print('Not implemented yet')
 
     def reset(self):
         """Simulates a 'factory reset' of the IRIS subsystem."""

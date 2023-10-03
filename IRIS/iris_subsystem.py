@@ -60,7 +60,7 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             'TempGATE': 25,             # in degree Celsius
             'TempFLASH': 25,            # in degree Celsius
             'SoftwareVersion': 1.0,
-            'Time': time.time()
+            'Time': DEFAULT_STATE_VALUES['DateTime'],
         }
         self.updatable_parameters = ['PowerStatus', 'SensorStatus', 'Time']
         self.executable_commands = {

@@ -83,7 +83,7 @@ class DFGMSimulator:
                 else:
                     self.update_packet()
                 self.format_packet()
-                # self.send_packet()
+                self.send_packet()
                 self.print_packet()
                 time.sleep(1) # Force packet to send every 1 second
             except BrokenPipeError:
@@ -139,14 +139,13 @@ class DFGMSimulator:
 
     def send_packet(self):
         '''TODO - Document function purpose'''
-        # To do - figure out what format packet should be sent in (maybe bytes, string, etc.)
-        self.client_socket.send(self.packet)
+        self.client_socket.send(self.packet_bytes)
 
     def print_packet(self):
         '''TODO - Document function purpose'''
         print("Measured packet size: " + str(len(self.packet_bytes)) + "\n")
-        print("Packet Bytes (Hexadecimal): \n\n" + self.packet_bytes.hex() + "\n")
-        print("Packet contents: \n")
+        print("Packet Bytes (Hexadecimal): \n" + self.packet_bytes.hex() + "\n")
+        print("Packet contents: ")
 
         for param in self.packet:
             if param == "HK_data":
@@ -169,11 +168,6 @@ if __name__ == "__main__":
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
 
     print(f"Starting DFGM subsystem on port {PORT}\n")
-
-    # debug
-    CONN = 30
-    simulator = DFGMSimulator(CONN)
-    simulator.start()
 
     # Create a socket and bind it to the port. Listen indefinitely for client connections
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

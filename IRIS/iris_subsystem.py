@@ -25,7 +25,6 @@ Copyright 2023 [Abhishek Naik]. Licensed under the Apache License, Version 2.0
 """
 
 
-import time
 import sys
 sys.path.append("../ex3_simulated_subsystems")
 from socket_stuff import create_socket_and_listen   # pylint: disable=C0413
@@ -55,12 +54,12 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             'SensorStatus': DEFAULT_STATE_VALUES['SensorStatus'],
             'NumImages': DEFAULT_STATE_VALUES['NumImages'],
             'MaxNumImages': DEFAULT_STATE_VALUES['MaxNumImages'],
+            'Time': DEFAULT_STATE_VALUES['DateTime'],
             'TempVIS': 25,              # in degree Celsius
             'TempNIR': 25,              # in degree Celsius
             'TempGATE': 25,             # in degree Celsius
             'TempFLASH': 25,            # in degree Celsius
             'SoftwareVersion': 1.0,
-            'Time': DEFAULT_STATE_VALUES['DateTime'],
         }
         self.updatable_parameters = ['PowerStatus', 'SensorStatus', 'Time']
         self.executable_commands = {

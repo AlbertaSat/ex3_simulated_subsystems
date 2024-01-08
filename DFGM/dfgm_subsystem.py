@@ -112,8 +112,12 @@ class DFGMSimulator:
         self.packet = default_packet
     
     def update_packet(self):
-        '''Updates parameters of the current packet'''
-        self.packet["PID"] += 1
+        '''Arbitrarily updates parameters of the current packet'''
+        self.packet["PID"] += 1 # Should increase by 1 on each packet
+        self.packet["HK_data"]["Core Voltage"] -= 1
+        self.packet["HK_data"]["Positive Rail Voltage"] -= 2
+        self.packet["HK_data"]["Input Voltage"] -= 3
+        self.packet["HK_data"]["Input Current"] -= 1
 
     def format_packet(self):
         '''Formats the current data packet into a byte array'''

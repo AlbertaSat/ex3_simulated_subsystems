@@ -1,8 +1,22 @@
 """This python program represents a simulated version of the DFGM payload component for ExAlta3.
 
-#TODO - explain how dfgm file works
+The Digital Fluxgate Magnetometer (DFGM) is a payload on the satellite that automatically collects
+magnetic field data when it's on. Upon collecting this data, the DFGM board should place it into a
+packet along with some DFGM housekeeping data, then send the packet to the OBC for processing and
+saving.
+
+IMPORTANT NOTES:
+Data collection by the DFGM is done every second when it is on. Hence, there should be a data
+packet sent outward from the DFGM board every second as well.
+
+No commands are required to be sent to the DFMG board directly as its main purpose is to only
+record data and send it outward to another board (OBC) for processing/saving.
+
+Data sent by the DFGM board will be in a byte format; it's not readable if you print it out
 
 Usage: DFGM_component.py non-default_port_num
+
+Copyright 2023 [Daniel Sacro]. Licensed under the Apache License, Version 2.0
 """
 
 import sys
@@ -13,6 +27,7 @@ from struct import pack
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
 
+# Format/order of housekeeping data
 house_keeping_data = {
     "Core Voltage": 5000, # HK 0 (mV)
     "Sensor Temperature": 25, # HK 1 (deg C)
@@ -28,7 +43,7 @@ house_keeping_data = {
     "Reserved 4": 0, # HK 11 (Unused)
 }
 
-# Contains raw data to be processed by OBC
+# Format of a raw magnetic field data sample to be processed by the OBC
 magnetic_field_tuple = {
     "x_DAC": 1, 
     "x_ADC": 1,
@@ -38,9 +53,10 @@ magnetic_field_tuple = {
     "z_ADC": 3
 }
 
-# There are 100 samples in each packet
+# There are 100 samples in each packet from the DFGM
 magnetic_field_data = [magnetic_field_tuple] * 100
 
+# Format of the complete DFGM data packet
 default_packet = {
     "DLE": 0x10, # Data Link Escape
     "STX": 0x02, # Start of Text
@@ -53,17 +69,17 @@ default_packet = {
     "mag_data": magnetic_field_data, 
     "Board ID": 1,
     "Sensor ID": 1,
-    "Reserved 1": 55, # Reserverd 1-5 are unused, but reserved for future use
+    "Reserved 1": 55, # Reserved 1-5 are unused; reserved for any future uses
     "Reserved 2": 55,
     "Reserved 3": 55,
     "Reserved 4": 55,
     "Reserved 5": 55,
-    "ETX": 0x03, # End of Text
-    "CRC": 0x0000 # Packet info
+    "ETX": 3, # End of Text
+    "CRC": 0 # Packet info
 }
 
 class DFGMSimulator:
-    '''TODO - Document class purpose'''
+    '''Simulates the DFGM board's functionality'''
 
     def __init__(self, client_socket):
         self.client_socket = client_socket
@@ -74,7 +90,7 @@ class DFGMSimulator:
         self.packet_bytes = bytearray(b'')
 
     def start(self):
-        '''TODO - Document function purpose'''
+        '''Simulates the DFGM board's ON state'''
         while True:
             try:
                 if self.is_first_packet:
@@ -92,17 +108,15 @@ class DFGMSimulator:
         self.client_socket.close()
 
     def generate_packet(self):
-        '''TODO - Document function purpose'''
-        if self.is_first_packet:
-            self.packet = default_packet
-            self.is_first_packet = False
+        '''Generates a new data packet'''
+        self.packet = default_packet
     
     def update_packet(self):
-        '''TODO - Document function purpose'''
+        '''Updates parameters of the current packet'''
         self.packet["PID"] += 1
 
     def format_packet(self):
-        '''TODO - Document function purpose'''
+        '''Formats the current data packet into a byte array'''
         # Force each house keeping data value to be in uint16 form
         self.house_keeping_bytes = bytearray(b'')
         for HK in house_keeping_data:
@@ -138,11 +152,11 @@ class DFGMSimulator:
                 self.packet_bytes.extend(self.magnetic_field_bytes)
 
     def send_packet(self):
-        '''TODO - Document function purpose'''
+        '''Sends the current packet through the socket'''
         self.client_socket.send(self.packet_bytes)
 
     def print_packet(self):
-        '''TODO - Document function purpose'''
+        '''Prints the current packet to the terminal'''
         print("Measured packet size: " + str(len(self.packet_bytes)) + "\n")
         print("Packet Bytes (Hexadecimal): \n" + self.packet_bytes.hex() + "\n")
         print("Packet contents: ")
@@ -164,7 +178,7 @@ class DFGMSimulator:
         print("\n\n\n") # Separate packets in console
 
 if __name__ == "__main__":
-    # If there is no arg, port is default otherwise use the arg
+    # If there is no arg, port is default. Otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
 
     print(f"Starting DFGM subsystem on port {PORT}\n")

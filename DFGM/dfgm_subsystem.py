@@ -140,6 +140,7 @@ class DFGMSimulator:
             if packet_section in ["DLE", "STX", "PID", "Packet Type", "ETX"]:
                 # Force these data packet sections to be in uint8 form
                 self.packet_bytes.extend(pack("B", packet_section_value))
+                # pylint: disable=line-too-long
             elif packet_section in ["Reserved 1", "Reserved 2", "Reserved 3", "Reserved 4", "Reserved 5"]:
                 # Force these data packet sections to be in uint8 form
                 self.packet_bytes.extend(pack("B", packet_section_value))

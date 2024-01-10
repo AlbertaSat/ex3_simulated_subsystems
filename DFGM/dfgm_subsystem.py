@@ -14,7 +14,7 @@ record data and send it outward to another board (OBC) for processing/saving.
 
 Data sent by the DFGM board will be in a byte format; it's not readable if you print it out
 
-Usage: DFGM_component.py non-default_port_num
+Usage: dfgm_subsystem.py non-default_port_num
 
 Copyright 2023 [Daniel Sacro]. Licensed under the Apache License, Version 2.0
 """
@@ -110,7 +110,7 @@ class DFGMSimulator:
     def generate_packet(self):
         '''Generates a new data packet'''
         self.packet = default_packet
-    
+
     def update_packet(self):
         '''Arbitrarily updates parameters of the current packet'''
         self.packet["PID"] += 1 # Should increase by 1 on each packet

@@ -123,8 +123,9 @@ class DFGMSimulator:
         '''Formats the current data packet into a byte array'''
         # Force each house keeping data value to be in uint16 form
         self.house_keeping_bytes = bytearray(b'')
-        for HK in house_keeping_data:
-            self.house_keeping_bytes.extend(pack("H", house_keeping_data[HK]))
+        # pylint: disable=consider-using-dict-items
+        for hk_item in house_keeping_data:
+            self.house_keeping_bytes.extend(pack("H", house_keeping_data[hk_item]))
 
         # Force each magnetic field coordinate value to be in uint16 form
         self.magnetic_field_bytes = bytearray(b'')

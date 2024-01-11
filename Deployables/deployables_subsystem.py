@@ -1,6 +1,6 @@
-"""This python program represents a simulated version of the Deployables (GPIOS) subsystem 
+"""This python program represents a simulated version of the Deployables (GPIOS) subsystem
 
-Each deployable is associated with a burwire pin, and a single feedback switch pin that indicates 
+Each deployable is associated with a burwire pin, and a single feedback switch pin that indicates
 whether the deployable has been successfully deployed. Each Pin represents a GPIO on the OBC.
 
 Burnwire GPIOS are OUTPUTS
@@ -10,25 +10,25 @@ The Fprime component will read these simulated feeback switches state (HIGH or L
 Timers activated upon a burnwire set HIGH simulate the feedback switch state changing.
 The Fprime component will be responsible for keeping track of the state of the deployables.
 
-Switches are assumed to be normally open, meaning: 
+Switches are assumed to be normally open, meaning:
     A switch pin reading HIGH indicates that the deployable has been successfully deployed.
 
 For now the sub system communicates with the OBC using strings over a TCP socket.
 
-Until we know more system specs I am assuming there are 2 types of commands that can be sent: 
+Until we know more system specs I am assuming there are 2 types of commands that can be sent:
     - Burwire Set - Set a GPIO pin HIGH or LOW (toggle a burnwire)
     - Switch Request - Request a GPIO value (get feedback switch state)
 
-# Example setting the DFGM burnwire active 
+# Example setting the DFGM burnwire active
     BURNWIRE_SET_COMMAND:DFGM:1
 
 # Example requesting the state of the DFGM feedback switch
     SWITCH_REQUEST_COMMAND:DFGM
 
-For now you can test your commands using netcat (nc) from the command line, and piping the command 
+For now you can test your commands using netcat (nc) from the command line, and piping the command
 to the socket from a seperate text file. I have also added a brief bash script to test this program.
 
-Usage: deployables_subsystem.py 
+Usage: deployables_subsystem.py
 
 Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
 """
@@ -37,7 +37,7 @@ import sys
 import threading
 import random
 
-sys.path.append('..') # Add parent directory to path so we can import modules from there
+sys.path.append('../') # Add parent directory to path so we can import modules from there
 import socket_stuff # pylint: disable=C0413
 import command_handler # pylint: disable=C0413
 
@@ -92,7 +92,7 @@ deployables_state = default_deployables_state
 
 
 def simulate_deployable(deployable_component, burnwire_pin_value):
-    """Simulate a deployable by setting the burnwire pin HIGH, and then creating a timer thread  
+    """Simulate a deployable by setting the burnwire pin HIGH, and then creating a timer thread
     that will setting the switch pin HIGH after a delay.
 
     Args:
@@ -124,7 +124,7 @@ def simulate_deployable(deployable_component, burnwire_pin_value):
 
 def set_switch_pin_high(deployable_component):
     """Set the switch pin high. This means the deployable was deployed successfully.
-    Once set high this value will never be changed for the life of the program. 
+    Once set high this value will never be changed for the life of the program.
 
     This will check that the burnwire pin is still high before setting the switch pin high.
     Otherwise if the burnwire pin is set back to low before timer expires, the switch pin stays low.

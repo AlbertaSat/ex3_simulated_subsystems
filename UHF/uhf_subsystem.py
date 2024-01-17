@@ -2,13 +2,7 @@
 
 
 """
-
-
 import sys
-sys.path.append("../")
-from socket_stuff import create_socket_and_listen   # pylint: disable=C0413
-from command_handler import CommandHandler          # pylint: disable=C0413
-from command_factory import CommandFactory          # pylint: disable=C0413
 
 #Constants
 DEFAULT_HOST = '127.0.0.1'

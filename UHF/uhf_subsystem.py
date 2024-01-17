@@ -19,9 +19,12 @@ DEFAULT_STATE_VALUES = {
     'Transmitting': 0, #1 for transmitting, 0 for off
     'Receiving': 0, #1 for recieving, 0 for off
     'Frequency': 300000, #in Hertz
-                    #voltage and current? Other things to add?
+                    
 }
 
+
+#add shutdown command
+#can add while loop to make ping every 30 seconds
 class UHFSubsystem:
     """Creates the state values for the UHF tranciever"""
     def __init__(self):
@@ -32,12 +35,12 @@ class UHFSubsystem:
             'Frequency': DEFAULT_STATE_VALUES['Frequency'],
         }
 
-    def transmit(self, frequency):
+    def transmit(self, frequency):  #pylint:disable=C0116:missing-function-docstring
         self.state['Transmitting'] += 1
         self.state['Frequency'] = frequency
         print('Transmitting Data')
 
-    def receive(self, frequency):
+    def receive(self, frequency):   #pylint:disable=C0116:missing-function-docstring
         self.state['Receiving'] += 1
         self.state['Frequency'] = frequency
         print('Receiving Data')

@@ -22,12 +22,11 @@ ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/nonexistent" \
+    --home "/app" \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
     appuser
-
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
@@ -37,32 +36,39 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
 
+#Add to this before clean to include programs you want
 RUN apt-get update && \
     apt-get install --yes --no-install-recommends \
     openssh-client \
     git \
+    vim \
+    nano \
     && apt-get clean
 
+#Get github key and create .ssh directory
 RUN mkdir -p -m 0600 ~/.ssh && \
     ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+#Ensure that the container can see AUTH_SOCK and the ssh agent
+RUN echo $(ssh-add -l) && echo $SSH_AUTH_SOCK
 
 RUN --mount=type=ssh \
     git clone git@github.com:AlbertaSat/ex3_simulated_subsystems.git
 
-ENV PYTHONPATH "${PYTHONPATH}:./ex3_simulated_subsystems/"
+#Easy way to remove docker container stored in the repo
+#Exit 0 in case we are on a branch without the docker container
+RUN cd ex3_simulated_subsystems && rm -r ./development_environment; exit 0
 
-#RUN python3 ./ex3_simulated_subsystems/Deployables/deployables_subsystem.py
-#RUN python3 ./ex3_simulated_subsystems/EPS/eps_subsystem.py
-#RUN python3 ./ex3_simulated_subsystems/IRIS/iris_subsystem.py
+#Allow editing for unprivliged user
+RUN chown -R appuser ex3_simulated_subsystems/
+
+#Fix to add custom modules without needing sys.path.append in each file
+ENV PYTHONPATH "${PYTHONPATH}:./ex3_simulated_subsystems/"
 
 
 # Switch to the non-privileged user to run the application.
 USER appuser
 
-# Copy the source code into the container.
-COPY . .
 
 # Expose the port that the application listens on.
 EXPOSE 8000
-
-# Run the application.

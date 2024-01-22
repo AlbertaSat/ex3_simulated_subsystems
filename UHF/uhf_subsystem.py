@@ -2,8 +2,9 @@
 
 
 """
-import sys
 
+import sys
+import time
 #Constants
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1831
@@ -30,21 +31,36 @@ class UHFSubsystem:
         }
 
     def transmit(self, frequency):  #pylint:disable=C0116:missing-function-docstring
-        self.state['Transmitting'] += 1
+        self.state['Transmitting'] = 1
         self.state['Frequency'] = frequency
         print('Transmitting Data')
 
     def receive(self, frequency):   #pylint:disable=C0116:missing-function-docstring
-        self.state['Receiving'] += 1
+        self.state['Receiving'] = 1
         self.state['Frequency'] = frequency
         print('Receiving Data')
 
+    def shutdown(self): #pylint:disable=C0116:missing-function-docstring
+        self.state['PowerStatus'] = 0
+        self.state['Frequency'] = 0
+        self.state['Receiving'] = 0
+        self.state['Transmitting'] = 0
     
+    def ping_call(self, package):
+        """This function will simulate a transmission or receiving of a packet of data from the OBC or from the ground-station."""
+        
+        while True:
+            print('System ping for: ',package)
+            time.sleep(10)
+
+
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
-
     print(f"Starting EPS subsystem on port {PORT}")
+    
+    uhf = UHFSubsystem()
+    uhf.ping_call(123)
         
 
 __author__ = "Rowan Rasmusson"

@@ -17,9 +17,7 @@ DEFAULT_STATE_VALUES = {
                     
 }
 
-
-#add shutdown command
-#can add while loop to make ping every 30 seconds
+#next I will add pickle module to simualte packing and unwrapping data being tranvieved
 class UHFSubsystem:
     """Creates the state values for the UHF tranciever"""
     def __init__(self):

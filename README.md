@@ -2,7 +2,7 @@
 
 Simulated subsystems for use with the simulated software architecture in AlbertaSats ExAlta3 Mission.
 
-## Simulated system design:
+## Simulated system design
 
 - Each simulated subsystem will be represented by a python program, that will host its own unique TCP/IP server and use a particular socket.
 - Each subsystem will have a dictionary representing its parameters / settings, which may be accessed by our simulated OBC FSW

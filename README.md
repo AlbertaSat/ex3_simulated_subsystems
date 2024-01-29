@@ -5,7 +5,7 @@ Simulated subsystems for use with the simulated software architecture in Alberta
 ## Simulated system design:
 
 - Each simulated subsystem will be represented by a python program, that will host its own unique TCP/IP server and use a particular socket.
-- Each subsystem will have a dictionary representing its parameters / settings, which may be accessed by our simulated OBC (via Fprime application for now)
+- Each subsystem will have a dictionary representing its parameters / settings, which may be accessed by our simulated OBC FSW
   
 - Object Oriented design principles and clean code practices should be used as much possible! See: <https://gist.github.com/wojteklu/73c6914cc446146b8b533c0988cf8d29>
 

@@ -31,15 +31,12 @@ The following is a list of possible branch types:
 
 ```@eval
 ## Description:
-These subsystems  were first setup to implement a command factory design pattern, and as such are dependant on a command handler and command factory python sources. Instead given the unique nature of each subsystem and payload, they shall not be designed to follow a particular command structure moving forward. 
-
-## Deliverable
-- [ ] Modify Deployables subsystem to function independent of command handler and command factory 
-- [ ] Modify EPS subsystem to function independent of command handler and command factory 
-- [ ] Modify IRIS subsystem to function independent of command handler and command factory 
 
 
-## Resources
+## Deliverables
+- [ ] 
+
+## Resources & References
 -  
 
 ```

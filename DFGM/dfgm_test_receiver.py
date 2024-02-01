@@ -15,11 +15,12 @@ import socket
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
+PACKET_SIZE = 1248
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((DEFAULT_HOST, DEFAULT_PORT))
     while True:
-        data = s.recv(1248)
+        data = s.recv(PACKET_SIZE)
         if not data:
             break
 

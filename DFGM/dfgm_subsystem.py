@@ -26,6 +26,7 @@ from struct import pack
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
+TOTAL_SAMPLES = 100
 
 # Format/order of housekeeping data
 house_keeping_data = {
@@ -53,8 +54,8 @@ magnetic_field_tuple = {
     "z_ADC": 3
 }
 
-# There are 100 samples in each packet from the DFGM
-magnetic_field_data = [magnetic_field_tuple] * 100
+# There are always 100 samples in each packet from the DFGM
+magnetic_field_data = [magnetic_field_tuple] * TOTAL_SAMPLES
 
 # Format of the complete DFGM data packet
 default_packet = {

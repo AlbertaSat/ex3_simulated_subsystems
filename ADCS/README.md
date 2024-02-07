@@ -7,7 +7,9 @@ system that controls the orientation of ex3.
 
 ## Data types
 - x,y,z angle
+  - Representable as a triplet?
 - x,y,z angular speed
+  - Same representation as the x,y,z angle?
 - ECI/ECEF/LLH position/velocity (Need definition)
 - Coarse and fine sun vector (Need definition)
 - Wheel speed

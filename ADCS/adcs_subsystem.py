@@ -23,6 +23,11 @@ class AngularSpeed(ThreeDimensionalMeasurements):
         super().__init__(x, y, z)
 
 
+class MagneticMeasurements(ThreeDimensionalMeasurements):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+
 class ADCSSubsystem:
     """
     This class represents the simulated ADCS subsystem.
@@ -34,11 +39,16 @@ class ADCSSubsystem:
         empty_block = (0, 0, 0)
         self.angle = AngularMeasurement(*empty_block)
         self.angle_speed = AngularSpeed(*empty_block)
+        self.magnetic_measurements = MagneticMeasurements(*empty_block)
+
+    def start(self):
+        """This method should start the simulation for the ADCS subsystem.
+        """
 
     def __repr__(self):
-        return (f"ADCSSubsystem(\n\tangle: {self.angle!r}," +
-                f"\n\tangle_speed: {self.angle_speed!r}"
-                + f"\n)")
+        return (f"ADCSSubsystem(\n" +
+                f"{self.__dict__!r}"
+                f"\n)")
 
 
 def command_line_handler(argv):

@@ -2,15 +2,43 @@
 import sys
 sys.path.append("../")
 
+
+class ThreeDimensionalMeasurements:
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __repr__(self):
+        return f"({self.x!r}, {self.y!r}, {self.z!r})"
+
+
+class AngularMeasurement(ThreeDimensionalMeasurements):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+
+class AngularSpeed(ThreeDimensionalMeasurements):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+
 class ADCSSubsystem:
     """
     This class represents the simulated ADCS subsystem.
     """
-    def __init__(self, builder_dict):
+    def __init__(self):
         """
         Base constructor. Uses a dictionary with the default values.
         """
-        self.state = builder_dict   # This is placeholder.
+        empty_block = (0, 0, 0)
+        self.angle = AngularMeasurement(*empty_block)
+        self.angle_speed = AngularSpeed(*empty_block)
+
+    def __repr__(self):
+        return (f"ADCSSubsystem(\n\tangle: {self.angle!r}," +
+                f"\n\tangle_speed: {self.angle_speed!r}"
+                + f"\n)")
 
 
 def command_line_handler(argv):
@@ -22,6 +50,9 @@ def command_line_handler(argv):
     Returns:
         (PORT, HOST)
     """
+    simulated_subsystem = ADCSSubsystem()
+    print(simulated_subsystem)
+
     default_host = "127.0.0.1"
     default_port = 1802
 

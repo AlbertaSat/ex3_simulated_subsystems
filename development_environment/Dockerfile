@@ -19,6 +19,8 @@ WORKDIR /app
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
+ARG GID=10001
+RUN groupadd "${GID}"
 RUN adduser \
     --disabled-password \
     --gecos "" \
@@ -26,6 +28,7 @@ RUN adduser \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
+    --gid "${GID}" \
     appuser
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
@@ -60,7 +63,14 @@ RUN --mount=type=ssh \
 RUN cd ex3_simulated_subsystems && rm -r ./development_environment; exit 0
 
 #Allow editing for unprivliged user
-RUN chown -R appuser ex3_simulated_subsystems/
+RUN mkdir .ssh/ && cp ~/.ssh/known_hosts .ssh/known_hosts
+
+RUN touch commit_and_push.sh
+COPY ./commit_and_push.sh /app/commit_and_push.sh
+RUN touch /app/.bash_logout && chown appuser /app/.bash_logout && echo '#!/bin/bash' > /app/.bash_logout
+RUN echo 'trap "/app/commit_and_push.sh" EXIT' > /app/.bash_logout
+RUN chown -R appuser ./*
+
 
 #Fix to add custom modules without needing sys.path.append in each file
 ENV PYTHONPATH "${PYTHONPATH}:./ex3_simulated_subsystems/"

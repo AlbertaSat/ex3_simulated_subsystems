@@ -7,4 +7,4 @@
 #ssh-add <path/to/private-github-access-key>
 
 export DOCKER_BUILDKIT=1
-docker build -t environment --ssh default .
+docker build -t environment --build-arg "UID=$(id -u)" --build-arg "GID=$(id -g)" --ssh default .

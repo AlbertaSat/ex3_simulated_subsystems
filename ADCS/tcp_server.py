@@ -25,7 +25,7 @@ class TcpListener(InterfaceInterface):
         self.connection_socket, self.client_addr = self.listening_sock.accept();
 
     def __repr__(self):
-        return f"TcpListener(addr: {self.host!r}, port: {self.port!r})"
+        return f"TcpListener({self.__dict__!r})"
         
 
     def __del__(self):

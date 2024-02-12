@@ -1,4 +1,6 @@
 import sys
+from abstract_interface import InterfaceInterface
+from tcp_server import TcpListener
 
 
 class ThreeDimensionalMeasurements:
@@ -12,7 +14,7 @@ class ThreeDimensionalMeasurements:
 
 
 class AngularMeasurement(ThreeDimensionalMeasurements):
-    def __init__(self, x, y, z):
+    def __init__(self, x: float, y: float, z: float):
         super().__init__(x, y, z)
 
 
@@ -30,7 +32,7 @@ class ADCSSubsystem:
     """
     This class represents the simulated ADCS subsystem.
     """
-    def __init__(self):
+    def __init__(self, interface: InterfaceInterface):
         """
         Base constructor. Uses a dictionary with the default values.
         """
@@ -38,11 +40,13 @@ class ADCSSubsystem:
         self.angle = AngularMeasurement(*empty_block)
         self.angle_speed = AngularSpeed(*empty_block)
         self.magnetic_measurements = MagneticMeasurements(*empty_block)
+        self.interface = interface
 
     def start(self):
         """This method should start the simulation for the ADCS subsystem.
         """
-        raise NotImplementedError
+        print(f"Starting ADCS subsystem with interface: {self.interface!r}")
+        self.interface.connect()
 
     def send_data(self):
         """This method sends the data through the interface
@@ -55,7 +59,7 @@ class ADCSSubsystem:
                 f"\n)")
 
 
-def command_line_handler(argv):
+def command_line_handler(argv) -> tuple[int, str]:
     """
     Control flow for what to return depending on the commandline arg.
 
@@ -64,16 +68,23 @@ def command_line_handler(argv):
     Returns:
         (PORT, HOST)
     """
-    simulated_subsystem = ADCSSubsystem()
-    print(simulated_subsystem)
 
     default_host = "127.0.0.1"
     default_port = 1802
 
-    return (argv[1] if len(argv) > 1 else default_port), default_host
+    ret_port = (int(argv[1]) if len(argv) > 1 else default_port)
+    ret_host = (argv[2] if len(argv) > 2 else default_host)
+
+    return ret_port, ret_host
 
 
 if __name__ == "__main__":
     port, host = command_line_handler(sys.argv)
+
+    simulated_subsystem = ADCSSubsystem(TcpListener(port, host))
+    print(simulated_subsystem)
+
+    simulated_subsystem.start()
+
 
     print(f"Starting ADCS subsystem on port {port}")

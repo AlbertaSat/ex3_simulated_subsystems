@@ -1,9 +1,26 @@
+# Python stdlib
 import sys
+from enum import Enum
+from enum import auto
+
+# Custom import
 from abstract_interface import InterfaceInterface
 from tcp_server import TcpListener
 
 
+class ADCSState(Enum):
+    """
+    Enum to represent the states of the ADCS
+    """
+    OFF = auto()
+    WORKING = auto()
+
+
 class ThreeDimensionalMeasurements:
+    """
+    Abstract class that deals with having multiple three
+    dimensional stored values
+    """
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
@@ -19,7 +36,7 @@ class AngularMeasurement(ThreeDimensionalMeasurements):
 
 
 class AngularSpeed(ThreeDimensionalMeasurements):
-    def __init__(self, x, y, z):
+    def __init__(self, x: float, y: float, z: float):
         super().__init__(x, y, z)
 
 
@@ -41,6 +58,7 @@ class ADCSSubsystem:
         self.angle_speed = AngularSpeed(*empty_block)
         self.magnetic_measurements = MagneticMeasurements(*empty_block)
         self.interface = interface
+        self.state = ADCSState.OFF
 
     def start(self):
         """This method should start the simulation for the ADCS subsystem.

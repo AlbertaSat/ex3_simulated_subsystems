@@ -5,6 +5,8 @@
 The ADCS, also known as the Altitude Determination and Control System, is a
 system that controls the orientation of ex3.
 
+The ADCS is used to help steer the satellite.
+
 ## Data types
 - x,y,z angle
   - Representable as a triplet?
@@ -16,3 +18,8 @@ system that controls the orientation of ex3.
 - Magnetic Field (IMU?)
 - Comm status
 - Rate sensor temperature (sensor measuring the wheel speed?)
+
+## TODO
+
+- [ ] Make a status report transaction code
+- [ ] 

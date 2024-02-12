@@ -1,6 +1,4 @@
-
 import sys
-sys.path.append("../")
 
 
 class ThreeDimensionalMeasurements:
@@ -44,6 +42,12 @@ class ADCSSubsystem:
     def start(self):
         """This method should start the simulation for the ADCS subsystem.
         """
+        raise NotImplementedError
+
+    def send_data(self):
+        """This method sends the data through the interface
+        """
+        raise NotImplementedError
 
     def __repr__(self):
         return (f"ADCSSubsystem(\n" +

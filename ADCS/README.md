@@ -23,3 +23,16 @@ The ADCS is used to help steer the satellite.
 
 - [ ] Make a status report transaction code
 - [ ] 
+
+## Usage
+
+There is now a dockerfile associated with this subsystem, and you are able to
+run it using the following command on powershell (please have docker installed)
+
+```powershell
+docker build -t adcs_server .
+```
+
+```powershell
+docker run -dp 127.0.0.1:8838:8838 adcs_server
+```

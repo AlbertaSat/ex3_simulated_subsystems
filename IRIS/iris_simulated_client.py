@@ -27,19 +27,33 @@ Usage:
 Copyright 2024 [Ben Fisher]. Licensed under the Apache License, Version 2.0
 """
 import socket
+import sys
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((DEFAULT_HOST, DEFAULT_PORT))
-    user_input = input()
-    while user_input != "EXIT":
-        s.sendall(user_input.encode())
-        data = s.recv(1024)
-        print(f"Received {data!r}")
-        user_input = input()
+def main(port):
+    """ Creates a socket and attempts to connect to a running server 
+        Once connection is received it listens for input and sends the input to the server
 
+        Args:
+        port (const uint): The port the socket should be opened on
+
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((DEFAULT_HOST, port))
+        while True:
+            user_input = input()
+            s.sendall(user_input.encode())
+            data = s.recv(1024)
+            print(f"Received {data!r}")
+            if user_input == "EXIT":
+                break
+
+
+if __name__ == "__main__":
+    PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
+    main(PORT)
 
 # pylint: disable=duplicate-code
 # no error

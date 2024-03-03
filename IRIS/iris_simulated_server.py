@@ -29,60 +29,15 @@ import sys
 import threading
 import logging
 import queue
+from iris_subsystem import IRISSubsystem
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
 MAX_COMMANDSIZE = 1024
-DEFAULT_STATE_VALUES = {                # at some point, we should simulate temperature changes
-            'PowerStatus': 1,           # 1 means powered on, 0 means off
-            'SensorStatus': 0,          # 1 means sensors are on, 0 means off
-            'NumImages': 0,             # number of images
-            'MaxNumImages': 20,         # maximum images that can be stored
-            'DateTime': '1707677962'    # arbitrary value for now (time at which this was written)
-        }
 
 LOGGER_FORMAT = "%(asctime)s: %(message)s"
 
-class IRISSubsystem: # pylint: disable=too-many-instance-attributes
-    """Holds the state of the IRIS subsystem.
-
-    Tuples are provided that define the executable commands and updatable parameters.
-    """
-    def __init__(self):
-        self.state = {
-            'PowerStatus': DEFAULT_STATE_VALUES['PowerStatus'],
-            'SensorStatus': DEFAULT_STATE_VALUES['SensorStatus'],
-            'NumImages': DEFAULT_STATE_VALUES['NumImages'],
-            'MaxNumImages': DEFAULT_STATE_VALUES['MaxNumImages'],
-            'Time': DEFAULT_STATE_VALUES['DateTime'],
-            'TempVIS': 25,              # in degree Celsius
-            'TempNIR': 25,              # in degree Celsius
-            'TempGATE': 25,             # in degree Celsius
-            'TempFLASH': 25,            # in degree Celsius
-            'SoftwareVersion': 1.0,
-        }
-        self.updatable_parameters = ['PowerStatus', 'SensorStatus', 'Time']
-        self.executable_commands = {
-            'TakeImage': self.take_image,
-            'Reset': self.reset
-        }
-
-    def take_image(self):
-        """Simulates taking a picture using the IRIS camera."""
-        self.state['NumImages'] += 1
-        print('Increased NumImages by 1')
-
-    def reset(self):
-        """Simulates a 'factory reset' of the IRIS subsystem."""
-        for key, value in DEFAULT_STATE_VALUES.items():
-            self.state[key] = value         # temp is what the temp is, doesn't get reset
-        print('Factory reset performed.')
-
-    def get_image(self, n_images):
-        """Simulates fecthing n_images stored on the IRIS subsystem """
-        print('Fetching', n_images, 'Images...')
-        #TO-DO
-        print(n_images, 'images fetched')
+Iris = IRISSubsystem()
 
 def input_listen(port, message_buffer):
     """ Creates a socket and begins a server that continuously listens for connection
@@ -112,15 +67,16 @@ def input_listen(port, message_buffer):
                     data = conn.recv(MAX_COMMANDSIZE)
                     if not data:
                         break
-                    if data.decode() == "EXIT":
-                        exit_flag = True
                     conn.sendall(data)
                     message_buffer.put(data) # Stores data into queue as byte encoded
+                    if data.decode() == "EXIT":
+                        exit_flag = True
 
     logging.info("Closing socket")
     return
 
-def command_handler(message_buffer):
+
+def command_handler(message_buffer, response_buffer):
     """ Checks for when FIFO message queue has information and fetches it and 
         conducts the required operations based on the content.
 
@@ -138,7 +94,38 @@ def command_handler(message_buffer):
         if not message:
             continue
         # TO-DO implement command handling for different commands
+        # NOTE: We do not currently know the format of IRIS commands, as such
+        # I have taken the liberty to set commands to be 3 letter abbreviations
+        # parameters passed to commands should be delimited with ':' and each message
+        # should begin with either EXECUTE/REQUEST depending on whether it expects a return
         logging.info("Received %s", message)
+        parsed_message = message.split(':')
+        command_length = len(parsed_message)
+        if command_length < 2:
+            logging.info("Requires ':' delimiter between commands")
+            continue
+
+        if parsed_message[1] in Iris.get_commands():
+            command = Iris.executable_commands[parsed_message[1]][0]
+            n_parameters = Iris.executable_commands[parsed_message[1]][1]
+            if command_length - 2 != n_parameters:
+                logging.info("INVALID COMMAND %s requires %s parameters", parsed_message[1], n_parameters)
+                continue
+            # Until I figure out how to pass an ever changing number of parameters this will have to do
+            match(command_length):
+                case 2:
+                    state = command()
+                case 3:
+                    state = command(parsed_message[2])
+                case 4:
+                    state = command(parsed_message[2], parsed_message[3])
+                case _:
+                    state = "Did not program more than 2 additional arguements currently"
+            if parsed_message[0] == "REQUEST":
+                logging.info(state)
+                # response_buffer.put(state)
+        else:
+            logging.info("Invalid Command %s", parsed_message[1])
     logging.info("Ending command processing")
     return
 
@@ -150,8 +137,9 @@ if __name__ == "__main__":
     logging.info("Starting IRIS subsystem on port %s", PORT)
     # Initiate server threads
     messages = queue.SimpleQueue()
+    responses = queue.SimpleQueue()
     listener = threading.Thread(target=input_listen, args=(PORT, messages,))
-    handler = threading.Thread(target=command_handler, args=(messages,))
+    handler = threading.Thread(target=command_handler, args=(messages,responses,))
 
     listener.start()
     handler.start()

@@ -77,7 +77,8 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             'RST': (self.reset, 0),
             'FTI': (self.get_image, 1),
             'FTH': (self.get_housekeeping, 0),
-            'STT': (self.set_time, 1)
+            'STT': (self.set_time, 1),
+            'HELP': (self.get_commands,0)
         }
     def get_commands(self):
         """Returns all possible command keys of the IRIS subsystem"""
@@ -102,8 +103,13 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         return n_images + ' images fetched'
 
     def get_housekeeping(self):
-        """Simulates fecthing the housekeeping data on the IRIS subsystem."""
-        return self.state.items()
+        """Simulates fecthing the housekeeping data on the IRIS subsystem.
+            Note that due to socket handling tuples must be converted into string pairs
+        """
+        current_state = list()
+        for pair in self.state.items():
+            current_state.append(str(pair[0]) + ": " + str(pair[1]) + " ")
+        return current_state
 
     def set_time(self, time):
         """Simulates setting the time of the IRIS subsystem"""

@@ -33,6 +33,7 @@ DEFAULT_STATE_VALUES = {                # at some point, we should simulate temp
             'MaxNumImages': 20,         # maximum images that can be stored
             'DateTime': '1707677962'    # arbitrary value for now (time at which this was written)
         }
+""" These are previous C commands used for Ex_Alta_2 for reference
 # void get_housekeeping(housekeeping_packet_t *hk);
 # void take_image();
 # void get_image_count(uint8_t *cnt);
@@ -50,6 +51,32 @@ DEFAULT_STATE_VALUES = {                # at some point, we should simulate temp
 # void set_capture_timestamp(uint8_t *file_timestamp, uint8_t sensor);
 # int store_file_infos_in_buffer();
 # void flood_cam_spi();
+"""
+class Command:
+    """ Holds a command with its type, abbreviation, and parameters
+    """
+    def __init__(self, message):
+        """Initializes a basic command structure, 
+           requires all parameters to be passed as a list
+
+           Args:
+           message (list of strings): contains all information for the command
+        """
+        length = len(message)
+        if length < 2:
+            raise IndexError
+        if message[0] not in ["EXECUTION", "REQUEST", "UPDATE"]:
+            raise ValueError
+
+        self.call = message[0]
+        self.abbrev = message[1]
+        self.parameters = list()
+        for index in range(2, length):
+            self.parameters.append(message[index])
+        self.n_params = length - 2
+
+    def __repr__(self):
+        return f"Command({self.__dict__!r})"
 
 
 class IRISSubsystem: # pylint: disable=too-many-instance-attributes
@@ -78,13 +105,47 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             'FTI': (self.get_image, 1),
             'FTH': (self.get_housekeeping, 0),
             'STT': (self.set_time, 1),
-            'HELP': (self.get_commands,0)
+            'HELP': (self.command_help,0)
         }
+
     def get_commands(self):
-        """Returns all possible command keys of the IRIS subsystem"""
-        return self.executable_commands.keys()
+        """Returns all possible command keys of the simulated IRIS subsystem"""
+        return list(self.executable_commands.keys())
+
+    def command_help(self):
+        """Returns all possible commands and their # of parameters 
+            on the simulated IRIS subsystem, newlines are appended 
+            for terminal clarity
+        """
+        commands = list()
+        commands.append("Abbrev: #parameters\n")
+        # Note that all commands have a tuple containing their method and # params
+        for pair in self.executable_commands.items():
+            commands.append(str(pair[0]) + ": " + str(pair[1][1]) + "\n")
+        return commands
+
+    def execute_command(self, command):
+        """Runs the provided command in the IRIS simualted subsystem if it exists
+
+            command (Command): class containing all information for command
+        """
+        # Simple error checking
+        if not isinstance(command, Command):
+            return "ERROR: command must be given using Command class"
+        if command.abbrev not in self.get_commands():
+            return "ERROR: command " + command.abbrev + " invalid, type 'REQUEST:HELP'"
+        execution = self.executable_commands[command.abbrev]
+        if command.n_params != execution[1]:
+            return "ERROR: command " + command.abbrev + " expects " + str(execution[1]) + " arg(s)"
+
+        if command.n_params == 0:
+            return execution[0]()
+        else:
+            return execution[0](command.parameters)
 
     # ---- IRIS Simulated Commands, all must be within self.executable_commands ----
+    # NOTE: Every executable command expecting parameters takes in a list
+    #       and parses it for parameters
     def take_image(self):
         """Simulates taking a picture using the IRIS camera."""
         self.state['NumImages'] += 1
@@ -96,8 +157,11 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             self.state[key] = value         # temp is what the temp is, doesn't get reset
         return 'Factory reset performed.'
 
-    def get_image(self, n_images):
-        """Simulates fecthing n_images stored on the IRIS subsystem."""
+    def get_image(self, params):
+        """Simulates fecthing n_images stored on the IRIS subsystem.
+            Expects 1 parameter passed: n_images (int)
+        """
+        n_images = params[0]
         # print('Fetching', n_images, 'Images...')
         #TO-DO
         return n_images + ' images fetched'
@@ -111,8 +175,11 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             current_state.append(str(pair[0]) + ": " + str(pair[1]) + " ")
         return current_state
 
-    def set_time(self, time):
-        """Simulates setting the time of the IRIS subsystem"""
+    def set_time(self, params):
+        """Simulates setting the time of the IRIS subsystem
+            Expects 1 parameter passed: time (unsigned long)
+        """
+        time = params[0]
         self.state['Time'] = time
         return 'Time updated to ' + self.state['Time']
 

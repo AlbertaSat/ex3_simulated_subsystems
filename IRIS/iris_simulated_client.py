@@ -28,6 +28,7 @@ Copyright 2024 [Ben Fisher]. Licensed under the Apache License, Version 2.0
 """
 import socket
 import sys
+import threading
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
@@ -45,11 +46,24 @@ def main(port):
         while True:
             user_input = input()
             s.sendall(user_input.encode())
-            data = s.recv(1024)
-            print(f"Received {data!r}")
+            receiver = threading.Thread(target=response_listen, args=(s,))
+            receiver.daemon = True
+            receiver.start()
             if user_input == "EXIT":
                 break
 
+def response_listen(conn):
+    """ Listens and prints responses from the server through the connected socket
+        This is meant to be a daemon thread, 
+        it is always running and closes once it is the only one left
+
+        Args:
+        conn (socket): The connected socket we are listening to
+
+    """
+    while True:
+        data = conn.recv(1024).decode()
+        print(data)
 
 if __name__ == "__main__":
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT

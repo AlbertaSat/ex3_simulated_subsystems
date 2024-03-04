@@ -39,7 +39,7 @@ LOGGER_FORMAT = "%(asctime)s: %(message)s"
 
 Iris = IRISSubsystem()
 
-def input_listen(port, message_buffer):
+def input_listen(port, message_buffer, reply_buffer):
     """ Creates a socket and begins a server that continuously listens for connection
         Once connection is received it listens for input and stores it into a FIFO queue
         Once input is terminated it resumes listening for a connection
@@ -49,7 +49,7 @@ def input_listen(port, message_buffer):
 
         Args:
         port (const uint): The port the socket should be opened on
-        message_buffer (SimpleQueue): The FIFO queue the input should be stored in
+        message_buffer (SimpleQueue): The FIFO queue the input is stored in
 
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -59,21 +59,59 @@ def input_listen(port, message_buffer):
         # Search for connections until told to exit
         while exit_flag is not True:
             conn, addr = s.accept() # Blocks execution until connection found
-            with conn:
+            with conn: # Connection is established
                 logging.info("Connected by %s", addr)
+                responder = threading.Thread(target=output_send, args=(conn, reply_buffer,))
+                responder.start()
                 while True:
                     # Put input into FIFO queue, verify to client command is received
                     # NOTE: This assumes all commands are less than MAX_COMMANDSIZE long
                     data = conn.recv(MAX_COMMANDSIZE)
                     if not data:
                         break
-                    conn.sendall(data)
+                    # conn.sendall(data) # For testing
                     message_buffer.put(data) # Stores data into queue as byte encoded
                     if data.decode() == "EXIT":
                         exit_flag = True
+                # Connection is lost, close the responder
+                responder.join()
 
     logging.info("Closing socket")
     return
+
+def output_send(conn, reply_buffer):
+    """ Receives an established socket and continuously checks for responses to be sent
+        Once a response is found, it transmits the response to the client through the socket
+        Terminates upon receiving "EXIT" response
+
+        This is meant for a seperate thread and to be used in tandem with 
+        both command handling threads and input listening threads.
+
+        Args:
+        conn (socekt): The socket currently opened.
+        reply_buffer (SimpleQueue): The FIFO queue the responses are stored in
+
+    """
+    while True:
+        reply = reply_buffer.get()
+        if not reply:
+            continue
+        if reply == "EXIT":
+            break
+        try:
+            if isinstance(reply, list):
+                for element in reply:
+                    logging.info(element)
+                    conn.sendall(element.encode())
+                continue
+            conn.sendall(reply.encode())
+        except: # pylint: disable=bare-except
+            # If any exception occurs assume connection has failed/is terminated without EXIT
+            logging.info("Force closing output loop")
+            return
+    logging.info("Closing output loop")
+    return
+
 
 
 def command_handler(message_buffer, response_buffer):
@@ -87,45 +125,50 @@ def command_handler(message_buffer, response_buffer):
         message_buffer (SimpleQueue): The FIFO queue the messages are fetched from
 
     """
-    message = ""
     # Wait for input in the queue until told to exit
-    while message != "EXIT":
+    while True:
         message = (message_buffer.get()).decode() # Messages are originally in bytes encoding
         if not message:
             continue
-        # TO-DO implement command handling for different commands
+        if message == "EXIT":
+            response_buffer.put("EXIT")
+            break
         # NOTE: We do not currently know the format of IRIS commands, as such
         # I have taken the liberty to set commands to be 3 letter abbreviations
         # parameters passed to commands should be delimited with ':' and each message
         # should begin with either EXECUTE/REQUEST depending on whether it expects a return
         logging.info("Received %s", message)
-        parsed_message = message.split(':')
-        command_length = len(parsed_message)
+        args = message.split(':')
+        command_length = len(args)
         if command_length < 2:
-            logging.info("Requires ':' delimiter between commands")
+            logging.info("ERROR %s Requires ':' delimiter between commands", message)
+            response_buffer.put("ERROR Requires ':'")
             continue
-
-        if parsed_message[1] in Iris.get_commands():
-            command = Iris.executable_commands[parsed_message[1]][0]
-            n_parameters = Iris.executable_commands[parsed_message[1]][1]
-            if command_length - 2 != n_parameters:
-                logging.info("INVALID COMMAND %s requires %s parameters", parsed_message[1], n_parameters)
-                continue
-            # Until I figure out how to pass an ever changing number of parameters this will have to do
-            match(command_length):
-                case 2:
-                    state = command()
-                case 3:
-                    state = command(parsed_message[2])
-                case 4:
-                    state = command(parsed_message[2], parsed_message[3])
-                case _:
-                    state = "Did not program more than 2 additional arguements currently"
-            if parsed_message[0] == "REQUEST":
-                logging.info(state)
-                # response_buffer.put(state)
         else:
-            logging.info("Invalid Command %s", parsed_message[1])
+            if args[1] in Iris.get_commands():
+                command = Iris.executable_commands[args[1]][0]
+                n_args = Iris.executable_commands[args[1]][1]
+                if command_length - 2 != n_args:
+                    logging.info("ERROR: command %s requires %s parameters", args[1], n_args)
+                    response_buffer.put("ERROR Requires " + str(n_args) + " param(s)")
+                    continue
+                # Until I figure out passing a variable number of parameters this will have to do
+                match(command_length):
+                    case 2:
+                        state = command()
+                    case 3:
+                        state = command(args[2])
+                    case 4:
+                        state = command(args[2], args[3])
+                    case _:
+                        state = "ERROR Only 2 parameters supported"
+                # Only when the command is requesting a response should response be given
+                logging.info(state)
+                if args[0] == "REQUEST":
+                    response_buffer.put(state)
+                    response_buffer.put("ERROR " + args[1] + " invalid, type 'HELP' for commands")
+            else:
+                logging.info("Invalid Command %s", args[1])
     logging.info("Ending command processing")
     return
 
@@ -138,8 +181,10 @@ if __name__ == "__main__":
     # Initiate server threads
     messages = queue.SimpleQueue()
     responses = queue.SimpleQueue()
-    listener = threading.Thread(target=input_listen, args=(PORT, messages,))
-    handler = threading.Thread(target=command_handler, args=(messages,responses,))
+
+    # NOTE: listener will create at max 1 sub_thread at a time for responding to the current client
+    listener = threading.Thread(target=input_listen, args=(PORT, messages, responses,))
+    handler = threading.Thread(target=command_handler, args=(messages, responses,))
 
     listener.start()
     handler.start()

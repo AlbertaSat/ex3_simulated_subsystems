@@ -29,7 +29,7 @@ import sys
 import threading
 import logging
 import queue
-from iris_subsystem import IRISSubsystem
+import iris_subsystem
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
@@ -37,7 +37,7 @@ MAX_COMMANDSIZE = 1024
 
 LOGGER_FORMAT = "%(asctime)s: %(message)s"
 
-Iris = IRISSubsystem()
+Iris = iris_subsystem.IRISSubsystem()
 
 def input_listen(port, message_buffer, reply_buffer):
     """ Creates a socket and begins a server that continuously listens for connection
@@ -134,41 +134,29 @@ def command_handler(message_buffer, response_buffer):
             response_buffer.put("EXIT")
             break
         # NOTE: We do not currently know the format of IRIS commands, as such
-        # I have taken the liberty to set commands to be 3 letter abbreviations
-        # parameters passed to commands should be delimited with ':' and each message
+        # I have taken the liberty to set commands to be simple abbreviations
+        # each term passed should be delimited with ':' and each message
         # should begin with either EXECUTE/REQUEST depending on whether it expects a return
         logging.info("Received %s", message)
         args = message.split(':')
-        command_length = len(args)
-        if command_length < 2:
+        try:
+            command = iris_subsystem.Command(args)
+        except IndexError:
             logging.info("ERROR %s Requires ':' delimiter between commands", message)
             response_buffer.put("ERROR Requires ':'")
             continue
-        else:
-            if args[1] in Iris.get_commands():
-                command = Iris.executable_commands[args[1]][0]
-                n_args = Iris.executable_commands[args[1]][1]
-                if command_length - 2 != n_args:
-                    logging.info("ERROR: command %s requires %s parameters", args[1], n_args)
-                    response_buffer.put("ERROR Requires " + str(n_args) + " param(s)")
-                    continue
-                # Until I figure out passing a variable number of parameters this will have to do
-                match(command_length):
-                    case 2:
-                        state = command()
-                    case 3:
-                        state = command(args[2])
-                    case 4:
-                        state = command(args[2], args[3])
-                    case _:
-                        state = "ERROR Only 2 parameters supported"
-                # Only when the command is requesting a response should response be given
-                logging.info(state)
-                if args[0] == "REQUEST":
-                    response_buffer.put(state)
-                    response_buffer.put("ERROR " + args[1] + " invalid, type 'HELP' for commands")
-            else:
-                logging.info("Invalid Command %s", args[1])
+        except ValueError:
+            logging.info("ERROR %s must begin with REQUEST/EXECUTE/UPDATE", message)
+            response_buffer.put("ERROR does not begin with REQUEST/EXECUTE/UPDATE")
+            continue
+
+        state = Iris.execute_command(command)
+
+        # Only when the command is requesting a response should response be given
+        logging.info(state)
+        if command.call == "REQUEST":
+            response_buffer.put(state)
+
     logging.info("Ending command processing")
     return
 

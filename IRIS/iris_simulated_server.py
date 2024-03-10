@@ -44,7 +44,7 @@ def input_listen(port, message_buffer, reply_buffer):
         Once connection is received it listens for input and stores it into a FIFO queue
         Once input is terminated it resumes listening for a connection
 
-        This is meant for a seperate thread and to be used in tandem with 
+        This is meant for a seperate thread and to be used in tandem with
         command handling threads.
 
         Args:
@@ -52,13 +52,13 @@ def input_listen(port, message_buffer, reply_buffer):
         message_buffer (SimpleQueue): The FIFO queue the input is stored in
 
     """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
         exit_flag = False
-        s.bind((DEFAULT_HOST, port))
-        s.listen()
+        server.bind((DEFAULT_HOST, port))
+        server.listen()
         # Search for connections until told to exit
         while exit_flag is not True:
-            conn, addr = s.accept() # Blocks execution until connection found
+            conn, addr = server.accept() # Blocks execution until connection found
             with conn: # Connection is established
                 logging.info("Connected by %s", addr)
                 responder = threading.Thread(target=output_send, args=(conn, reply_buffer,))
@@ -77,14 +77,13 @@ def input_listen(port, message_buffer, reply_buffer):
                 responder.join()
 
     logging.info("Closing socket")
-    return
 
 def output_send(conn, reply_buffer):
     """ Receives an established socket and continuously checks for responses to be sent
         Once a response is found, it transmits the response to the client through the socket
         Terminates upon receiving "EXIT" response
 
-        This is meant for a seperate thread and to be used in tandem with 
+        This is meant for a seperate thread and to be used in tandem with
         both command handling threads and input listening threads.
 
         Args:
@@ -105,17 +104,18 @@ def output_send(conn, reply_buffer):
                     conn.sendall(element.encode())
                 continue
             conn.sendall(reply.encode())
-        except: # pylint: disable=bare-except
-            # If any exception occurs assume connection has failed/is terminated without EXIT
-            logging.info("Force closing output loop")
+        except BrokenPipeError:
+            logging.info("Connection to client lost: Force closing output loop")
             return
+        except socket.error as exc: # pylint: disable=bare-except
+            # May implement counter for too many failures, (connection not lost but data cant send)
+            logging.info("Output socket error %s: connection not lost, continuing responder", exc)
     logging.info("Closing output loop")
-    return
 
 
 
 def command_handler(message_buffer, response_buffer):
-    """ Checks for when FIFO message queue has information and fetches it and 
+    """ Checks for when FIFO message queue has information and fetches it and
         conducts the required operations based on the content.
 
         This is meant for a seperate thread and to be used in tandem with a server that
@@ -158,8 +158,6 @@ def command_handler(message_buffer, response_buffer):
             response_buffer.put(state)
 
     logging.info("Ending command processing")
-    return
-
 
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg

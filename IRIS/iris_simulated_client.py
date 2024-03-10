@@ -1,8 +1,8 @@
 """
-This python program sets up a TCP client terminal and simulates 
+This python program sets up a TCP client terminal and simulates
 the commands sent to the IRIS payload component for ExAlta3.
 
-Until we know more system specs we assume 
+Until we know more system specs we assume
 there are three types of commands that can be sent:
     - Request - Request a paramater from the state dictionary
     - Update  - Update a parameter in the state dictionary
@@ -34,19 +34,19 @@ DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
 
 def main(port):
-    """ Creates a socket and attempts to connect to a running server 
+    """ Creates a socket and attempts to connect to a running server
         Once connection is received it listens for input and sends the input to the server
 
         Args:
         port (const uint): The port the socket should be opened on
 
     """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((DEFAULT_HOST, port))
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
+        client.connect((DEFAULT_HOST, port))
         while True:
             user_input = input()
-            s.sendall(user_input.encode())
-            receiver = threading.Thread(target=response_listen, args=(s,))
+            client.sendall(user_input.encode())
+            receiver = threading.Thread(target=response_listen, args=(client,))
             receiver.daemon = True
             receiver.start()
             if user_input == "EXIT":
@@ -54,7 +54,7 @@ def main(port):
 
 def response_listen(conn):
     """ Listens and prints responses from the server through the connected socket
-        This is meant to be a daemon thread, 
+        This is meant to be a daemon thread,
         it is always running and closes once it is the only one left
 
         Args:

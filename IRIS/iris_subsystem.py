@@ -52,11 +52,12 @@ DEFAULT_STATE_VALUES = {                # at some point, we should simulate temp
 # int store_file_infos_in_buffer();
 # void flood_cam_spi();
 """
-class Command:
+class Command: # pylint: disable=too-few-public-methods
+    # Planned to contain some functionality regarding the organizing/return types of commands
     """ Holds a command with its type, abbreviation, and parameters
     """
     def __init__(self, message):
-        """Initializes a basic command structure, 
+        """Initializes a basic command structure,
            requires all parameters to be passed as a list
 
            Args:
@@ -70,7 +71,7 @@ class Command:
 
         self.call = message[0]
         self.abbrev = message[1]
-        self.parameters = list()
+        self.parameters = []
         for index in range(2, length):
             self.parameters.append(message[index])
         self.n_params = length - 2
@@ -113,11 +114,11 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         return list(self.executable_commands.keys())
 
     def command_help(self):
-        """Returns all possible commands and their # of parameters 
-            on the simulated IRIS subsystem, newlines are appended 
+        """Returns all possible commands and their # of parameters
+            on the simulated IRIS subsystem, newlines are appended
             for terminal clarity
         """
-        commands = list()
+        commands = []
         commands.append("Abbrev: #parameters\n")
         # Note that all commands have a tuple containing their method and # params
         for pair in self.executable_commands.items():
@@ -140,8 +141,7 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
 
         if command.n_params == 0:
             return execution[0]()
-        else:
-            return execution[0](command.parameters)
+        return execution[0](command.parameters)
 
     # ---- IRIS Simulated Commands, all must be within self.executable_commands ----
     # NOTE: Every executable command expecting parameters takes in a list
@@ -162,6 +162,9 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             Expects 1 parameter passed: n_images (int)
         """
         n_images = params[0]
+        current_images = self.state["NumImages"]
+        if n_images > current_images:
+            return "Only " + current_images + " available, sending available images"
         # print('Fetching', n_images, 'Images...')
         #TO-DO
         return n_images + ' images fetched'
@@ -170,7 +173,7 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         """Simulates fecthing the housekeeping data on the IRIS subsystem.
             Note that due to socket handling tuples must be converted into string pairs
         """
-        current_state = list()
+        current_state = []
         for pair in self.state.items():
             current_state.append(str(pair[0]) + ": " + str(pair[1]) + " ")
         return current_state

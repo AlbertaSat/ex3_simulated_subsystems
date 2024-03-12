@@ -6,7 +6,7 @@
 
 ARG PYTHON_VERSION=3.10.12
 FROM python:${PYTHON_VERSION}-slim as base
-
+SHELL ["/bin/bash", "-c"]
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
 
@@ -68,12 +68,15 @@ RUN mkdir .ssh/ && cp ~/.ssh/known_hosts .ssh/known_hosts
 RUN touch commit_and_push.sh
 COPY ./commit_and_push.sh /app/commit_and_push.sh
 RUN touch /app/.bash_logout && chown appuser /app/.bash_logout && echo '#!/bin/bash' > /app/.bash_logout
-RUN echo 'trap "/app/commit_and_push.sh" EXIT' > /app/.bash_logout
+RUN echo 'trap "/app/commit_and_push.sh" EXIT' >> /etc/bash.bashrc
+COPY ./entrypoint.sh /app/entrypoint.sh
 RUN chown -R appuser ./*
 
 
 #Fix to add custom modules without needing sys.path.append in each file
 ENV PYTHONPATH "${PYTHONPATH}:./ex3_simulated_subsystems/"
+
+ENTRYPOINT ./entrypoint.sh
 
 
 # Switch to the non-privileged user to run the application.

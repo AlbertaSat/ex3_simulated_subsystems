@@ -1,7 +1,7 @@
 #!/bin/bash
 
-name="Vortexblaster"
-email="vortexblaster09@gmail.com"
+name=""
+email=""
 
 
 cd ~/ex3_simulated_subsystems

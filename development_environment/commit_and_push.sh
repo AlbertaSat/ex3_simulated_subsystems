@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-git init ./ex3_simulated_subsystems/
+git init ~/ex3_simulated_subsystems/
 
 message=""
 branch=""

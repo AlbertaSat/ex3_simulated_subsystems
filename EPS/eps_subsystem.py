@@ -3,7 +3,7 @@
 For now the sub system communicates with strings over a TCP socket. The strings are parsed
 into a command type and associated data.
 
-Until we know more system specs I am assuming there are three types of commands that can be sent: 
+Until we know more system specs I am assuming there are three types of commands that can be sent:
     - Request - Request a paramater from the state dictionary
     - Update  - Update a parameter in the state dictionary
     - Execute - Execute a command (e.g. reset watchdog timer)
@@ -17,10 +17,10 @@ Until we know more system specs I am assuming there are three types of commands 
 # Example to execute a ResetWatchdogTimer command:
     execute:ResetWatchdogTimer
 
-For now you can test your commands using netcat (nc) from the command line, and piping the command 
+For now you can test your commands using netcat (nc) from the command line, and piping the command
 to the socket from a seperate text file.
 
-Usage: ESP_component.py non-default_port_num 
+Usage: ESP_component.py non-default_port_num
 
 Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
 """
@@ -46,9 +46,9 @@ default_eps_state = {
 
 class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-instance-attributes
     """Holds the state of the EPS subsystem.
-    
+
     Tuples are defined that define the executable commands and updatable parameters.
-    Functions are defined which are called upon receipt of associated execute commands. 
+    Functions are defined which are called upon receipt of associated execute commands.
     """
 
     def __init__(self):

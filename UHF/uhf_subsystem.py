@@ -1,23 +1,64 @@
 """This program is designed to simulate the UHF transceiver on the Ex-Alta 3 satellite.
 
-
 """
-
 import sys
+import socket
 import time
+import pickle #simulates serialization of data between sockets
+
+
+
 #Constants
 DEFAULT_HOST = '127.0.0.1'
-DEFAULT_PORT = 1831
+DEFAULT_PORT = 8352
 COMMAND_DELIMITER = ':'
 DEFAULT_STATE_VALUES = {
     'PowerStatus': 1, #1 for on, 0 for off
     'Transmitting': 0, #1 for transmitting, 0 for off
     'Receiving': 0, #1 for recieving, 0 for off
-    'Frequency': 300000, #in Hertz
+    'Frequency': 2.428*10**9, #2.428 GHz
                     
 }
 
-#next I will add pickle module to simualte packing and unwrapping data being tranvieved
+class TCPPORT:
+    """Initializes a generic tcp port that will be used on two sides of the UHF for the OBC facing side and the GS facing side"""
+    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
+        self.host = host
+        self.port = port
+
+    def client(self,host,port, filename):
+        """Simulates client that a UHF would use to communicate"""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((host, port))
+            message = pickle.dumps(filename)
+            s.sendall(message)
+        
+    def server(self,host,port):
+        """Simulates a server that th GS would have and one onboard the UHF"""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((host, port))
+            s.listen()
+            conn, addr = s.accept()
+            with conn:
+                print(f"Connected by {addr}")
+                while True:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    self.deserialize_and_print(data)
+
+    def serialize_file(self, filename):
+        with open(filename, 'rb') as file:
+            file_contents = file.read()
+            serialized_data = pickle.dumps(file_contents)
+            return serialized_data
+        
+    def deserialize_and_print(self, serialized_data):
+        deserialized_data = pickle.loads(serialized_data)
+        print(deserialized_data)
+
+
+
 class UHFSubsystem:
     """Creates the state values for the UHF tranciever"""
     def __init__(self):
@@ -50,16 +91,29 @@ class UHFSubsystem:
         while True:
             print('System ping for: ',package)
             time.sleep(10)
+    
+    def wrap_packet(self, packet, file):
+        """returns a serialized packet to send to the ground station"""
+        pickle.dump(packet, file)
+
+    def unwrap_packet(self, packet):
+        """get a command from the ground station and deserializes it"""
+        pickle.load(packet)
 
 
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
     print(f"Starting EPS subsystem on port {PORT}")
+    gs = TCPPORT()
+    uhf_facing_gs = TCPPORT()
+    gs.server(DEFAULT_HOST,DEFAULT_PORT)
     
-    uhf = UHFSubsystem()
-    uhf.ping_call(123)
-        
+    
+
+
+    
+    
 
 __author__ = "Rowan Rasmusson"
 __copyright__ = """

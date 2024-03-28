@@ -1,39 +1,40 @@
 """This program is designed to simulate the UHF transceiver on the Ex-Alta 3 satellite.
-
+It uses TCP sockets 
 """
 import sys
 import socket
 import time
-import pickle #simulates serialization of data between sockets
+import pickle  # simulates serialization of data between sockets
 
 
-
-#Constants
+# Constants
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 8352
 COMMAND_DELIMITER = ':'
 DEFAULT_STATE_VALUES = {
-    'PowerStatus': 1, #1 for on, 0 for off
-    'Transmitting': 0, #1 for transmitting, 0 for off
-    'Receiving': 0, #1 for recieving, 0 for off
-    'Frequency': 2.428*10**9, #2.428 GHz
-                    
+    'PowerStatus': 1,  # 1 for on, 0 for off
+    'Transmitting': 0,  # 1 for transmitting, 0 for off
+    'Receiving': 0,  # 1 for recieving, 0 for off
+    'Frequency': 2.428*10**9,  # 2.428 GHz
 }
 
+
 class TCPPORT:
-    """Initializes a generic tcp port that will be used on two sides of the UHF for the OBC facing side and the GS facing side"""
+    """Initializes a generic tcp port that will be used on two
+    sides of the UHF for the OBC facing side and the GS facing side"""
+
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
         self.host = host
         self.port = port
 
-    def client(self,host,port, filename):
+    def client(self, host, port, filename):
         """Simulates client that a UHF would use to communicate"""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((host, port))
             message = pickle.dumps(filename)
             s.sendall(message)
-        
-    def server(self,host,port):
+
+    def server(self, host, port):
         """Simulates a server that th GS would have and one onboard the UHF"""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((host, port))
@@ -48,19 +49,21 @@ class TCPPORT:
                     self.deserialize_and_print(data)
 
     def serialize_file(self, filename):
+        """Turns a file into a binary stream to send over a TCP socket"""
         with open(filename, 'rb') as file:
             file_contents = file.read()
             serialized_data = pickle.dumps(file_contents)
             return serialized_data
-        
-    def deserialize_and_print(self, serialized_data):
-        deserialized_data = pickle.loads(serialized_data)
-        print(deserialized_data)
 
+    def deserialize_and_print(self, serialized_data):
+        """Meant for recienving a binary stream from a TCP socket and printing the contents"""
+        deserialized_data = pickle.loads(serialized_data)
+        print(f"Recieved Message: {deserialized_data}")
 
 
 class UHFSubsystem:
     """Creates the state values for the UHF tranciever"""
+
     def __init__(self):
         self.state = {
             'PowerStatus': DEFAULT_STATE_VALUES['PowerStatus'],
@@ -69,29 +72,29 @@ class UHFSubsystem:
             'Frequency': DEFAULT_STATE_VALUES['Frequency'],
         }
 
-    def transmit(self, frequency):  #pylint:disable=C0116:missing-function-docstring
+    def transmit(self, frequency):  # pylint:disable=C0116:missing-function-docstring
         self.state['Transmitting'] = 1
         self.state['Frequency'] = frequency
         print('Transmitting Data')
 
-    def receive(self, frequency):   #pylint:disable=C0116:missing-function-docstring
+    def receive(self, frequency):  # pylint:disable=C0116:missing-function-docstring
         self.state['Receiving'] = 1
         self.state['Frequency'] = frequency
         print('Receiving Data')
 
-    def shutdown(self): #pylint:disable=C0116:missing-function-docstring
+    def shutdown(self):  # pylint:disable=C0116:missing-function-docstring
         self.state['PowerStatus'] = 0
         self.state['Frequency'] = 0
         self.state['Receiving'] = 0
         self.state['Transmitting'] = 0
-    
+
     def ping_call(self, package):
-        """This function will simulate a transmission or receiving of a packet of data from the OBC or from the ground-station."""
-        
+        """This function will simulate a transmission or receiving of
+        a packet of data from the OBC or from the ground-station."""
         while True:
-            print('System ping for: ',package)
+            print('System ping for: ', package)
             time.sleep(10)
-    
+
     def wrap_packet(self, packet, file):
         """returns a serialized packet to send to the ground station"""
         pickle.dump(packet, file)
@@ -104,16 +107,13 @@ class UHFSubsystem:
 if __name__ == "__main__":
     # If there is no arg, port is default otherwise use the arg
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
-    print(f"Starting EPS subsystem on port {PORT}")
+    print(f"Starting UHF subsystem on port {PORT}")
     gs = TCPPORT()
-    uhf_facing_gs = TCPPORT()
-    gs.server(DEFAULT_HOST,DEFAULT_PORT)
-    
-    
+    gs.server(DEFAULT_HOST, DEFAULT_PORT)
+    # Next develop the OBC facing UHF side so data can go from the GS -> UHF -> OBC
+    #create a part of program for GS -> UHF -> OBC. UHF will be server and client.
+    #Next, will do reverse and send packet from OBC -> UHF -> HS
 
-
-    
-    
 
 __author__ = "Rowan Rasmusson"
 __copyright__ = """

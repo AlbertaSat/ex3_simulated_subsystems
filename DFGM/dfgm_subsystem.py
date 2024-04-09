@@ -23,6 +23,7 @@ import sys
 import socket
 import time
 from struct import pack
+import numpy as np
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
@@ -89,9 +90,14 @@ class DFGMSimulator:
         self.house_keeping_bytes = None
         self.magnetic_field_bytes = None
         self.packet_bytes = bytearray(b'')
+    
+    def dfgm_data(self):
+        with open("0c4R0196.txt") as d:
+            self.data = d.read().splitlines()
 
     def start(self):
         '''Simulates the DFGM board's ON state'''
+        self.dfgm_data()
         while True:
             try:
                 if self.is_first_packet:
@@ -111,14 +117,42 @@ class DFGMSimulator:
     def generate_packet(self):
         '''Generates a new data packet'''
         self.packet = default_packet
+        pid = self.packet["PID"]
+        values = self.data[pid - 1].split()
+    
+        self.packet["HK_data"]["Core Voltage"] = float(values[0])
+        self.packet["HK_data"]["Sensor Temperature"] = float(values[1])
+        self.packet["HK_data"]["Reference Temperature"] = float(values[2])
+        self.packet["HK_data"]["Board Temperature"] = float(values[2])
+        self.packet["HK_data"]["Positive Rail Voltage"] = float(values[3])
+        self.packet["HK_data"]["Input Voltage"] = float(values[4])
+        self.packet["HK_data"]["Reference Voltage"] = float(values[5])
+        self.packet["HK_data"]["Input Current"] = float(values[6])
+        self.packet["HK_data"]["Reserved 1"] = float(values[7])
+        self.packet["HK_data"]["Reserved 2"] = float(values[8])
+        self.packet["HK_data"]["Reserved 3"] = float(values[9])
+        self.packet["HK_data"]["Reserved 4"] = float(values[10])
+            
+
 
     def update_packet(self):
         '''Arbitrarily updates parameters of the current packet'''
         self.packet["PID"] += 1 # Should increase by 1 on each packet
-        self.packet["HK_data"]["Core Voltage"] -= 1
-        self.packet["HK_data"]["Positive Rail Voltage"] -= 2
-        self.packet["HK_data"]["Input Voltage"] -= 3
-        self.packet["HK_data"]["Input Current"] -= 1
+        pid = self.packet["PID"]
+        values = self.data[pid - 1].split()
+    
+        self.packet["HK_data"]["Core Voltage"] = float(values[9])
+        self.packet["HK_data"]["Sensor Temperature"] = float(values[10])
+        self.packet["HK_data"]["Reference Temperature"] = float(values[11])
+        self.packet["HK_data"]["Board Temperature"] = float(values[12])
+        self.packet["HK_data"]["Positive Rail Voltage"] = float(values[13])
+        self.packet["HK_data"]["Input Voltage"] = float(values[14])
+        self.packet["HK_data"]["Reference Voltage"] = float(values[15])
+        self.packet["HK_data"]["Input Current"] = float(values[16])
+        self.packet["HK_data"]["Reserved 1"] = float(values[17])
+        self.packet["HK_data"]["Reserved 2"] = float(values[18])
+        self.packet["HK_data"]["Reserved 3"] = float(values[19])
+        self.packet["HK_data"]["Reserved 4"] = float(values[20])
 
     def format_packet(self):
         '''Formats the current data packet into a byte array'''
@@ -126,7 +160,7 @@ class DFGMSimulator:
         self.house_keeping_bytes = bytearray(b'')
         # pylint: disable=consider-using-dict-items
         for hk_item in house_keeping_data:
-            self.house_keeping_bytes.extend(pack("H", house_keeping_data[hk_item]))
+            self.house_keeping_bytes.extend(pack("e", house_keeping_data[hk_item]))
 
         # Force each magnetic field coordinate value to be in uint16 form
         self.magnetic_field_bytes = bytearray(b'')

@@ -23,7 +23,6 @@ import sys
 import socket
 import time
 from struct import pack
-import numpy as np
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
@@ -90,14 +89,12 @@ class DFGMSimulator:
         self.house_keeping_bytes = None
         self.magnetic_field_bytes = None
         self.packet_bytes = bytearray(b'')
-    
-    def dfgm_data(self):
-        with open("0c4R0196.txt") as d:
+
+        with open("0c4R0196.txt", "r", encoding="utf-8") as d:
             self.data = d.read().splitlines()
 
     def start(self):
         '''Simulates the DFGM board's ON state'''
-        self.dfgm_data()
         while True:
             try:
                 if self.is_first_packet:

@@ -116,7 +116,6 @@ class DFGMSimulator:
         self.packet = default_packet
         pid = self.packet["PID"]
         values = self.data[pid - 1].split()
-
         self.packet["HK_data"]["Core Voltage"] = float(values[0])
         self.packet["HK_data"]["Sensor Temperature"] = float(values[1])
         self.packet["HK_data"]["Reference Temperature"] = float(values[2])
@@ -129,15 +128,12 @@ class DFGMSimulator:
         self.packet["HK_data"]["Reserved 2"] = float(values[8])
         self.packet["HK_data"]["Reserved 3"] = float(values[9])
         self.packet["HK_data"]["Reserved 4"] = float(values[10])
-      
-
 
     def update_packet(self):
         '''Arbitrarily updates parameters of the current packet'''
         self.packet["PID"] += 1 # Should increase by 1 on each packet
         pid = self.packet["PID"]
         values = self.data[pid - 1].split()
-
         self.packet["HK_data"]["Core Voltage"] = float(values[9])
         self.packet["HK_data"]["Sensor Temperature"] = float(values[10])
         self.packet["HK_data"]["Reference Temperature"] = float(values[11])

@@ -16,6 +16,10 @@ Data sent by the DFGM board will be in a byte format; it's not readable if you p
 
 Usage: dfgm_subsystem.py non-default_port_num
 
+Ref:
+    - DFGM packet definition:
+    https://docs.google.com/spreadsheets/d/1oG7MqW2fGvx7_t4NcG0M-k14b_UO5pgA/edit#gid=1051083699
+
 Copyright 2023 [Daniel Sacro]. Licensed under the Apache License, Version 2.0
 """
 
@@ -27,6 +31,8 @@ from struct import pack
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
 TOTAL_SAMPLES = 100
+
+PACKET_EMIT_RATE = 1 #Rate that packet emits per second (Hz)
 
 # Format/order of housekeeping data
 house_keeping_data = {
@@ -105,7 +111,7 @@ class DFGMSimulator:
                 self.format_packet()
                 self.send_packet()
                 self.print_packet()
-                time.sleep(1) # Force packet to send every 1 second
+                time.sleep(1/PACKET_EMIT_RATE) # Force packet to send every 1 second
             except BrokenPipeError:
                 print("Client disconnected abruptly")
                 break

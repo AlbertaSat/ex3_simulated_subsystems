@@ -26,7 +26,7 @@ Copyright 2023 [Abhishek Naik]. Licensed under the Apache License, Version 2.0
 
 
 import sys
-sys.path.append("../ex3_simulated_subsystems")
+sys.path.append("../")
 from socket_stuff import create_socket_and_listen   # pylint: disable=C0413
 from command_handler import CommandHandler          # pylint: disable=C0413
 from command_factory import CommandFactory          # pylint: disable=C0413

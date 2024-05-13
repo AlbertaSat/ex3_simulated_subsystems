@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 class ThreeDimensionalMeasurements:
     """
     Abstract class that deals with having multiple three

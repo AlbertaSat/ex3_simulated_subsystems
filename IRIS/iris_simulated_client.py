@@ -32,6 +32,10 @@ import threading
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
+MAX_RECEIVE = 1024
+FLAG_HEADER = 'FLAG:'
+FLAGSIZE = 5
+PACKET_DELIMITER = ':'
 
 def main(port):
     """ Creates a socket and attempts to connect to a running server
@@ -62,8 +66,107 @@ def response_listen(conn):
 
     """
     while True:
-        data = conn.recv(1024).decode()
-        print(data)
+        check_flag(conn) # This blocks execution until FLAG_HEADER is received
+
+        # Start flag received, next element is length of packet
+        packet_len = get_packet_length(conn)
+
+        data = conn.recv(packet_len)
+        text = str(data)
+        # TO-DO implement packet length tracker that receives packet length before reading
+        if text.startswith('IMAGES:'):
+            n_images = text.split(':')[1]
+            if fetch_images(conn, n_images) == n_images:
+                print("Successfully saved "+n_images+" images")
+        else:
+            print(data.decode())
+
+def fetch_images(conn, n_images):
+    """ Listens on socket and attempts to read in n_images and write them to client directory
+        If invalid image name is given, or something goes wrong :(, flushes buffer and print error
+        
+
+        Args:
+        conn (socket): The connected socket we are listening to
+        n_images (int): The number of images expected to read
+
+        Returns:
+        # : failure to read one of the images, # is the number of images successfully read
+        n_images: successfully read all images
+    """
+    # Will repeat until it processes all images
+    for image_count in range(n_images):
+        # Wait for next packet
+        check_flag(conn)
+        packet_len = get_packet_length(conn)
+
+        #Location packet should prepend the image packet
+        image_name = str(conn.recv(packet_len))
+        if not image_name.startswith('image'):
+            # Error in reading images, flush receival data and print error
+            conn.setblocking(False)
+            while True:
+                try:
+                    conn.recv(4096)
+                except BlockingIOError:
+                    break
+            conn.setblocking(True)
+            print("ERROR: " + image_name + " is not a valid name")
+            return image_count
+
+        # Read in the next image
+        image = open('./Client_Photos/' + image_name, 'wb')
+        check_flag(conn)
+        packet_len = get_packet_length(conn)
+
+        data = conn.recv(packet_len)
+        image.write(data)
+        image.close()
+    return n_images
+
+def check_flag(conn):
+    """ Listens on socket conn and reads one byte at a time
+        will listen until it receives a series of bytes that mirrors the FLAG_HEADER        
+        Once received, returns 1
+
+        Args:
+        conn (socket): The connected socket we are listening to
+
+    """
+    while True:
+        flag_check = ['0'] * FLAGSIZE
+        # Scan 1 byte at a time for start flag
+        data = conn.recv(1)
+        flag_check.append(str(data))
+        flag_check.pop(0)
+
+        counter = 0
+        for index in range(FLAGSIZE):
+            if flag_check[index] != FLAG_HEADER[index]:
+                break
+            counter += 1
+
+        if counter == FLAGSIZE:
+            return 1
+
+def get_packet_length(conn):
+    """ Listens on socket connection and reads in a the length of the next packet
+        this is to be called after check_flag successfully finds a flag
+
+        Args:
+        conn (socket): The connected socket we are listening to
+
+        Returns:
+        legnth of next packet (int)
+    """
+    packet_len = 0
+    data = conn.recv(1)
+    while data != PACKET_DELIMITER:
+        if packet_len != 0: #There is another digit
+            packet_len *= 10
+        packet_len += int(data.decode())
+        data = conn.recv(1)
+    return packet_len
 
 if __name__ == "__main__":
     PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT

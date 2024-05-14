@@ -33,7 +33,7 @@ import iris_subsystem
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
-MAX_COMMANDSIZE = 1024
+MAX_COMMANDSIZE = 128
 
 LOGGER_FORMAT = "%(asctime)s: %(message)s"
 
@@ -100,10 +100,18 @@ def output_send(conn, reply_buffer):
         try:
             if isinstance(reply, list):
                 for element in reply:
-                    logging.info(element)
-                    conn.sendall(element.encode())
+                    # logging.info(element)
+                    #TO-DO implement packet length tracker that is sent before a packet
+                    header = "FLAG:" + str(len(element)) + ':'
+                    if not isinstance(element, bytes):
+                        element = element.encode()
+                    conn.sendall(header.encode())
+                    conn.sendall(element)
                 continue
-            conn.sendall(reply.encode())
+            else:
+                header = "FLAG:" + str(len(reply)) + ':'
+                conn.sendall(header.encode())
+                conn.sendall(reply.encode())
         except BrokenPipeError:
             logging.info("Connection to client lost: Force closing output loop")
             return

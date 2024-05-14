@@ -19,15 +19,21 @@ The ADCS is used to help steer the satellite.
 - Comm status
 - Rate sensor temperature (sensor measuring the wheel speed?)
 
-## TODO
+## Payload design
 
+- TODO
+
+## TODO
 - [ ] Make a status report transaction code
-- [ ] 
+- [ ] Implement an echo command
 
 ## Usage
 
-There is now a dockerfile associated with this subsystem, and you are able to
-run it using the following command on powershell (please have docker installed)
+Note: We are missing docker setups for running the unit test. Run using your local environment for now.
+
+_There is now a dockerfile associated with this subsystem, and you are able to
+run it using the following command on powershell (please have docker installed)_
+
 
 ```powershell
 docker build -t adcs_server .
@@ -36,3 +42,9 @@ docker build -t adcs_server .
 ```powershell
 docker run -dp 127.0.0.1:8838:8838 adcs_server
 ```
+
+## Testing Table
+
+| Test Name | Test Description |
+| --- | --- | 
+| `test_setup` | This test makes sure that the unit testing framework, and mocked objects are functioning as expected. |

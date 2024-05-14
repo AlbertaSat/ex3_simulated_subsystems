@@ -45,7 +45,10 @@ class MockConnection(ConnectionProtocol):
 
     @transmitted.setter
     def transmitted(self, transmitted: bytes):
-        self.__transmitted = transmitted
+        if isinstance(transmitted, bytes):
+            self.__transmitted = transmitted
+        else:
+            raise TypeError
 
 
 class TestAdcsSubsystem(unittest.TestCase):
@@ -81,11 +84,14 @@ class TestAdcsSubsystem(unittest.TestCase):
 
         # Testing the testing helper methods
         if self.communication_interface != None:
-            self.set_received(b"0xABCD1234")
-            self.assertEqual(b"0xABCD1234", self.communication_interface.received)
+            self.set_received(b"\xAB\xCD\x12\x34")
+            self.assertEqual(b"\xAB\xCD\x12\x34", self.communication_interface.received)
 
             self.communication_interface.transmitted = b"0x4242ABAB"
             self.assertEqual(b"0x4242ABAB", self.get_transmitted())
+
+    def test_invalid_state(self):
+        """Testing how the simulated subsystem handles invalid state"""
 
 
 if __name__ == "__main__":

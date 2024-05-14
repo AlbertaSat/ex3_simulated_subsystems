@@ -4,54 +4,12 @@ Feel free to remove all the tutorial stuff once the team is familiar with the co
 """
 
 import unittest
+from unittest import TestCase
+from unittest.mock import Mock
 from adcs_subsystem import ADCSSubsystem
-from abstract_interface import ConnectionProtocol
 
 
-class MockConnection(ConnectionProtocol):
-    """This class mocks a connection, but the input and the output can be
-    controlled and monitored by the testing framework"""
-
-    def __init__(self):
-        """Init Mock object"""
-        self.__received = bytes()
-        self.__transmitted = bytes()
-
-    def send(self, data: bytes):
-        print(f"{data}")
-
-    def recv(self) -> bytes:
-        return self.received
-
-    @property
-    def received(self) -> bytes:
-        """This is the getter for the received property"""
-        return self.__received
-
-    @received.setter
-    def received(self, received: bytes):
-        """This is the setter. Will be used for unit testing
-
-        Enforcing this type to be bytes (Not bytearray)
-        """
-        if isinstance(received, bytes):
-            self.__received = received
-        else:
-            raise TypeError
-
-    @property
-    def transmitted(self) -> bytes:
-        return self.__transmitted
-
-    @transmitted.setter
-    def transmitted(self, transmitted: bytes):
-        if isinstance(transmitted, bytes):
-            self.__transmitted = transmitted
-        else:
-            raise TypeError
-
-
-class TestAdcsSubsystem(unittest.TestCase):
+class TestAdcsSubsystem(TestCase):
     def set_received(self, rx: bytes) -> None:
         """Quick wrapper function to set the mock value"""
         if self.communication_interface != None:
@@ -67,7 +25,7 @@ class TestAdcsSubsystem(unittest.TestCase):
     def setUp(self) -> None:
         """
         Tutorial: This method is used to setup the testing class"""
-        self.communication_interface = MockConnection()
+        self.communication_interface = Mock()
         self.dut = ADCSSubsystem(self.communication_interface)
         return super().setUp()
 
@@ -95,6 +53,7 @@ class TestAdcsSubsystem(unittest.TestCase):
 
     def test_invalid_state(self):
         """Testing how the simulated subsystem handles invalid state"""
+        self.assertEqual(True, False)
 
 
 if __name__ == "__main__":

@@ -20,7 +20,6 @@ The ADCS is used to help steer the satellite.
 - Rate sensor temperature (sensor measuring the wheel speed?)
 
 ## Payload design
-
 - TODO
 
 ## TODO

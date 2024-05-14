@@ -33,15 +33,30 @@ class ADCSSubsystem:
         self.magnetic_measurements = MagneticMeasurements(*empty_block)
         self.state = ADCSState.OFF
 
+        self.rx_buffer = None
+        self.tx_buffer = None
+
         self.connection = connection_protocol
+
+    def __repr__(self):
+        return f"ADCSSubsystem(\n" + f"{self.__dict__!r}" f"\n)"
 
     def start(self):
         """This method should start the simulation for the ADCS subsystem."""
         self.connection.send(b"Hi")
         buffer = self.connection.recv()
 
-    def __repr__(self):
-        return f"ADCSSubsystem(\n" + f"{self.__dict__!r}" f"\n)"
+    def init_link(self):
+        """This method should initiate the protocol connection between the OBC and the ADCS"""
+        raise NotImplementedError
+
+    def send_bytes(self, data: bytes) -> None:
+        """This method sends bytes to the connected OBC"""
+        self.connection.send(data)
+
+    def read_bytes(self) -> bytes:
+        """Wrapper function around the connection protocol"""
+        return self.connection.recv()
 
 
 def command_line_handler(argv) -> tuple[int, str]:

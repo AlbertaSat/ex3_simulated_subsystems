@@ -25,6 +25,7 @@ Copyright 2023 [Abhishek Naik]. Licensed under the Apache License, Version 2.0
 """
 
 IRIS_COMMAND_SIZE = 1024
+SIMULATED_MAX_PHOTOS = 3 # This is how many photos we actually have for testing
 
 DEFAULT_STATE_VALUES = {                # at some point, we should simulate temperature changes
             'PowerStatus': 1,           # 1 means powered on, 0 means off
@@ -92,6 +93,8 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
             'NumImages': DEFAULT_STATE_VALUES['NumImages'],
             'MaxNumImages': DEFAULT_STATE_VALUES['MaxNumImages'],
             'Time': DEFAULT_STATE_VALUES['DateTime'],
+            'Images': './Server_Photos/',
+            'ImageExt': '.jpeg',
             'TempVIS': 25,              # in degree Celsius
             'TempNIR': 25,              # in degree Celsius
             'TempGATE': 25,             # in degree Celsius
@@ -161,13 +164,24 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         """Simulates fecthing n_images stored on the IRIS subsystem.
             Expects 1 parameter passed: n_images (int)
         """
-        n_images = params[0]
+        n_images = int(params[0])
         current_images = self.state["NumImages"]
-        if n_images > current_images:
-            return "Only " + current_images + " available, sending available images"
-        # print('Fetching', n_images, 'Images...')
-        #TO-DO
-        return n_images + ' images fetched'
+        retrieval = []
+        if current_images > SIMULATED_MAX_PHOTOS: # This only matters for simulation purposes
+            current_images = SIMULATED_MAX_PHOTOS
+
+        if n_images < current_images:
+            current_images = n_images
+        retrieval.append('IMAGES:' + str(current_images))
+
+        for count in range(1, current_images + 1):
+            image_name = 'image' + str(count) + self.state['ImageExt']
+            retrieval.append(image_name)
+            image = open(self.state['Images'] + image_name, 'rb')
+            retrieval.append(image.read())
+            image.close()
+
+        return retrieval
 
     def get_housekeeping(self):
         """Simulates fecthing the housekeeping data on the IRIS subsystem.

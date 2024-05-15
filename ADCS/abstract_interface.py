@@ -1,5 +1,5 @@
 class ConnectionProtocol:
-    """TODO: We should put the packet creation and so on be the
+    """TODO: We should put the packet serialization and so on be the
     responsibility of the connection protocol, since it will be
     changing as we get further into the project."""
 

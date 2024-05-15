@@ -1,21 +1,10 @@
 # Python stdlib
 import sys
-from enum import Enum
-from enum import auto
 
 # Custom import
 from abstract_interface import ConnectionProtocol
 from tcp_server import TCPClient
 from adcs_components import AngularMeasurement, AngularSpeed, MagneticMeasurements
-
-
-class ADCSState(Enum):
-    """
-    Enum to represent the states of the ADCS
-    """
-
-    OFF = auto()
-    WORKING = auto()
 
 
 class ADCSSubsystem:

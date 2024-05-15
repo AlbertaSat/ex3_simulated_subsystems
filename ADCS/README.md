@@ -44,6 +44,15 @@ docker run -dp 127.0.0.1:8838:8838 adcs_server
 
 ## Testing Table
 
+### ADCS Subsystem
+
 | Test Name | Test Description |
 | --- | --- | 
 | `test_setup` | This test makes sure that the unit testing framework, and mocked objects are functioning as expected. |
+
+### Temporary Connection Protocol
+
+| Test Name | Test Description |
+| --- | --- | 
+| `test_setup` | This test makes sure that the unit testing framework, and mocked objects are functioning as expected. |
+| `test_serializing` | This test should check if the connection protocol object is able to turn the packet object into a byte stream. |

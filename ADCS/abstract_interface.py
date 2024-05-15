@@ -1,4 +1,8 @@
 class ConnectionProtocol:
+    """TODO: We should put the packet creation and so on be the
+    responsibility of the connection protocol, since it will be
+    changing as we get further into the project."""
+
     def send(self, data: bytes):
         """
         This method will send data. Force the input to be bytes so that the

@@ -21,6 +21,14 @@ IRIS is a system on ExAlta3 which is responsible for capturing and storing image
 - In order to receive a response, the client must use calltype "REQUEST"
 - No command is actually implemented as we do not know the expected returns
 
+### Commands
+    'TKI': take image
+    'RST': reset to default
+    'FTI': fetch image, params: # images to fetch
+    'FTH': fetch housekeeping
+    'STT': set time, params: time to set
+    'HELP': list commands and their params
+
 ## Usage
 - The server is run through python PORT is whatever port you wish to use, or leave blank for default port 1821:
 ```python

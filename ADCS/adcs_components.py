@@ -32,3 +32,18 @@ class AngularSpeed(ThreeDimensionalMeasurements):
 class MagneticMeasurements(ThreeDimensionalMeasurements):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
+
+
+class MagneticCurrent(ThreeDimensionalMeasurements):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+
+class WheelSpeed(ThreeDimensionalMeasurements):
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+
+
+class SystemClock:
+    def __init__(self, time):
+        self.time = time

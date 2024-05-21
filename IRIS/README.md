@@ -39,3 +39,8 @@ python3 ./iris_simulated_server.py PORT
 python3 ./iris_client_server.py PORT
 ```
 
+Once running, type REQUEST:CMD:PARAM1 to run command 'CMD' with parameter 'PARAM1' and receive its output message
+An example is REQUEST:FTI:2 to receive two images from the server
+Running with any command other than REQUEST will result in no response from the server. 
+As such, COMMAND:TKI will work as it requires no output, COMMAND:FTI:1 will not as the server will never send an image.
+All commands have an output message, mainly for debugging. Fetch commands need to be called with REQUEST otherwise they are pointless.

@@ -28,13 +28,13 @@ Copyright 2024 [Ben Fisher]. Licensed under the Apache License, Version 2.0
 """
 import socket
 import sys
-import threading
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1821
 MAX_RECEIVE = 1024
-FLAG_HEADER = 'FLAG:'
-FLAGSIZE = 5
+FLAG_HEADER = 'FLAG'
+END_FLAG = "|END" # END_FLAG should have same length as FLAGSIZE
+FLAGSIZE = 4
 PACKET_DELIMITER = ':'
 
 def main(port):
@@ -50,11 +50,13 @@ def main(port):
         while True:
             user_input = input()
             client.sendall(user_input.encode())
-            receiver = threading.Thread(target=response_listen, args=(client,))
-            receiver.daemon = True
-            receiver.start()
             if user_input == "EXIT":
                 break
+            if user_input.startswith("REQUEST"):
+                print("Receiving response...\n")
+                response_listen(client)
+                print("\n\nContinue Commands")
+
 
 def response_listen(conn):
     """ Listens and prints responses from the server through the connected socket
@@ -66,25 +68,28 @@ def response_listen(conn):
 
     """
     while True:
-        check_flag(conn) # This blocks execution until FLAG_HEADER is received
-
-        # Start flag received, next element is length of packet
+        done = check_flag(conn) # This blocks execution until FLAG_HEADER is received
+        if done:
+            return
+        # Start flag received, nextRE element is length of packet
         packet_len = get_packet_length(conn)
 
         data = conn.recv(packet_len)
-        text = str(data)
         # TO-DO implement packet length tracker that receives packet length before reading
-        if text.startswith('IMAGES:'):
-            n_images = text.split(':')[1]
-            if fetch_images(conn, n_images) == n_images:
-                print("Successfully saved "+n_images+" images")
+        if data.startswith(b'IMAGES:'):
+
+            n_images = int(data.split(b':')[1])
+            if n_images == 0:
+                print("No images found")
+            elif fetch_images(conn, n_images) == n_images:
+                print("Successfully saved "+ str(n_images) +" images")
         else:
-            print(data.decode())
+            print(data.decode(), end="")
 
 def fetch_images(conn, n_images):
     """ Listens on socket and attempts to read in n_images and write them to client directory
         If invalid image name is given, or something goes wrong :(, flushes buffer and print error
-        
+
 
         Args:
         conn (socket): The connected socket we are listening to
@@ -101,7 +106,7 @@ def fetch_images(conn, n_images):
         packet_len = get_packet_length(conn)
 
         #Location packet should prepend the image packet
-        image_name = str(conn.recv(packet_len))
+        image_name = conn.recv(packet_len).decode("utf-8")
         if not image_name.startswith('image'):
             # Error in reading images, flush receival data and print error
             conn.setblocking(False)
@@ -115,39 +120,44 @@ def fetch_images(conn, n_images):
             return image_count
 
         # Read in the next image
-        image = open('./Client_Photos/' + image_name, 'wb')
-        check_flag(conn)
-        packet_len = get_packet_length(conn)
+        with open('./Client_Photos/' + image_name, 'wb') as image:
+            check_flag(conn)
+            packet_len = get_packet_length(conn)
 
-        data = conn.recv(packet_len)
-        image.write(data)
-        image.close()
+            data = conn.recv(packet_len)
+            image.write(data)
+            image.close()
     return n_images
 
 def check_flag(conn):
     """ Listens on socket conn and reads one byte at a time
-        will listen until it receives a series of bytes that mirrors the FLAG_HEADER        
+        will listen until it receives a series of bytes that mirrors the FLAG_HEADER
         Once received, returns 1
 
         Args:
         conn (socket): The connected socket we are listening to
 
     """
+    flag_check = ['0'] * FLAGSIZE
     while True:
-        flag_check = ['0'] * FLAGSIZE
+
         # Scan 1 byte at a time for start flag
         data = conn.recv(1)
-        flag_check.append(str(data))
+        flag_check.append(data.decode("utf-8"))
         flag_check.pop(0)
 
         counter = 0
+        end = 0
         for index in range(FLAGSIZE):
             if flag_check[index] != FLAG_HEADER[index]:
-                break
-            counter += 1
+                counter += 1
+            if flag_check[index] == END_FLAG[index]:
+                end += 1
 
-        if counter == FLAGSIZE:
-            return 1
+        if counter == 0:
+            return 0
+        if end == FLAGSIZE:
+            return 1 # END tag found, done receiving
 
 def get_packet_length(conn):
     """ Listens on socket connection and reads in a the length of the next packet
@@ -160,12 +170,13 @@ def get_packet_length(conn):
         legnth of next packet (int)
     """
     packet_len = 0
-    data = conn.recv(1)
+    data = conn.recv(1) # Fetch first delimiter
+    data = conn.recv(1).decode() # Fetch start of second delimiter
     while data != PACKET_DELIMITER:
         if packet_len != 0: #There is another digit
             packet_len *= 10
-        packet_len += int(data.decode())
-        data = conn.recv(1)
+        packet_len += int(data)
+        data = conn.recv(1).decode()
     return packet_len
 
 if __name__ == "__main__":

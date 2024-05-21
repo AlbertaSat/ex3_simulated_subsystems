@@ -16,6 +16,11 @@ class TcpListener(ConnectionProtocol):
         self.connection_socket = None
         self.client_addr = None
 
+        self.debug = False
+
+    def set_debug(self, mode: bool):
+        self.debug = mode
+
     def connect(self):
         """
         Abstract method implementation to establish a connection
@@ -23,6 +28,18 @@ class TcpListener(ConnectionProtocol):
         """
         self.listening_sock.listen()
         self.connection_socket, self.client_addr = self.listening_sock.accept()
+
+    def send(self, data):
+        """"Sends data from the host"""
+        self.connection_socket.sendall(data)
+        if self.debug:
+            print(f"SENT {data}")
+
+    def recv(self) -> bytes:
+        buffer = self.connection_socket.recv()
+        if self.debug:
+            print(f"RECV f{buffer}")
+        return buffer
 
     def __repr__(self):
         return f"TcpListener({self.__dict__!r})"

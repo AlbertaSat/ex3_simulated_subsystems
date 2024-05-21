@@ -45,5 +45,5 @@ class WheelSpeed(ThreeDimensionalMeasurements):
 
 
 class SystemClock:
-    def __init__(self, time):
+    def __init__(self, time: float):
         self.time = time

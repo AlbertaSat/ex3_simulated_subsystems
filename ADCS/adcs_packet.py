@@ -1,3 +1,11 @@
+from enum import Enum, auto
+
+class PacketType(Enum):
+    """Specifying the packet type"""
+    DATA = auto()
+    CONTROL = auto()
+
+
 class AdcsPacket:
     """This is the class representing the packet that the ADCS will do transaction with"""
 
@@ -10,3 +18,21 @@ class AdcsPacket:
     def to_bytes(self) -> bytes:
         """This function returns the bytes representation of the current packet."""
         raise NotImplementedError
+
+    @staticmethod
+    def byte_of_type(packet_type: PacketType) -> bytes:
+        """Converts a packet type enum into the serial representation"""
+        ret: bytes
+        match packet_type:
+            case PacketType.DATA:
+                ret = b"\x01"
+            case PacketType.CONTROL:
+                ret = b"\x02"
+            case _:
+                ret = b"\x00"
+        return ret
+
+
+if __name__ == "__main__":
+    unittest.main()
+    

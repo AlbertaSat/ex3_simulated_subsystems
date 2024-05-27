@@ -5,26 +5,23 @@ IRIS is a system on ExAlta3 which is responsible for capturing and storing image
 ### Data types:
 - Command(list)
     - list is a list representing a command received, contains type of call, command key, and any parameters to be passed
-    - Currently, Command requires contents passed in list form where [0] is call type, [1] is key, and then parameters
+    - Currently, Command requires contents passed in list form [0] is key, and then [n] parameters
 - IRISSubsytem()
-    - All executable commands available through REQUEST:HELP
+    - All executable commands available through HELP
 
 &nbsp;
 ## TO-DO
-- [ ] Make the server more object-oriented
-- [ ] Create a dockerfile associated with the subsystem
-- [ ] Implement a photo storage system and begin setting up sending photo transfers
-- [ ] Clean up the IRISSubsystem, (potentially make commands and states more object oriented)
+- Add more commands
 
 ### Documentation 
-- Currently the subsystem expects commands to be made in the form CALLTYPE:CMD:PARAM:PARAM(S)...
-- In order to receive a response, the client must use calltype "REQUEST"
-- No command is actually implemented as we do not know the expected returns
+- Currently the subsystem expects commands to be made in the form CMD:PARAM:PARAM(S)...
+- Currently all commands return a response for debugging purposes - may remove this later
+- As we do not know the expected returns all responses are just placeholders.
 
 ### Commands
-    'TKI': take image
+    'TKI': take one image
     'RST': reset to default
-    'FTI': fetch image, params: # images to fetch
+    'FTI': fetch image, params: # images to fetch 
     'FTH': fetch housekeeping
     'STT': set time, params: time to set
     'HELP': list commands and their params
@@ -39,8 +36,51 @@ python3 ./iris_simulated_server.py PORT
 python3 ./iris_client_server.py PORT
 ```
 
-Once running, type REQUEST:CMD:PARAM1 to run command 'CMD' with parameter 'PARAM1' and receive its output message
-An example is REQUEST:FTI:2 to receive two images from the server
-Running with any command other than REQUEST will result in no response from the server. 
-As such, COMMAND:TKI will work as it requires no output, COMMAND:FTI:1 will not as the server will never send an image.
-All commands have an output message, mainly for debugging. Fetch commands need to be called with REQUEST otherwise they are pointless.
+Once running, type CMD:PARAM1:PARAM2:PARAM(s) to run command 'CMD' with parameters 'PARAM1', 'PARAM2'... and receive its output message
+
+Command EXIT closes both server and client
+
+Example Usage:
+```python
+USR@usr:.../ex3_simulated_subsystems/IRIS$ python3 iris_simulated_client.py
+HELP
+
+Receiving response...
+Abbrev: #parameters
+TKI: 0
+RST: 0
+FTI: 1
+FTH: 0
+STT: 1
+HELP: 0
+
+Continue Commands
+
+TKI
+
+Receiving response...
+Increased NumImages by 1
+Continue Commands
+
+TKI
+
+Receiving response...
+Increased NumImages by 1
+Continue Commands
+
+FAIL
+
+Receiving response...
+ERROR: command FAIL invalid, type 'HELP' for more info
+Continue Commands
+
+FTI:3
+
+Receiving response...
+Successfully saved 2 images
+
+Continue Commands
+
+EXIT
+USR@usr:.../ex3_simulated_subsystems/IRIS$
+```

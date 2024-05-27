@@ -52,10 +52,9 @@ def main(port):
             client.sendall(user_input.encode())
             if user_input == "EXIT":
                 break
-            if user_input.startswith("REQUEST"):
-                print("Receiving response...\n")
-                response_listen(client)
-                print("\n\nContinue Commands")
+            print("\nReceiving response...")
+            response_listen(client)
+            print("\nContinue Commands\n")
 
 
 def response_listen(conn):

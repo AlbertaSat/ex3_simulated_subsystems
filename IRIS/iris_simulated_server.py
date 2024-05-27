@@ -1,26 +1,12 @@
 """
 This python program sets up a TCP server and simulates the IRIS payload component for ExAlta3.
 
-Until we know more system specs we assume there are three types of commands that can be sent:
-    - Request - Request a paramater from the state dictionary
-    - Update  - Update a parameter in the state dictionary
-    - Execute - Execute a command (e.g. reset watchdog timer)
-
-# Example to toggle the sensors on:
-     update:SensorStatus:1
-
-# Example to request the temperature of the visible-light sensor:
-    request:TempVIS
-
-# Example to use the camera:
-    execute:TakeImage
-
 Usage:
 - From one terminal:
     - python IRIS/iris_subsystem.py optional_port_num
 - From another terminal:
     - nc host_ip port
-    - type commands like 'request:TempVIS' (without the quotes)
+    - type commands like 'TKI' or 'FTI:2 (without the quotes)
 
 Copyright 2024 [Ben Fisher, Abhishek Naik]. Licensed under the Apache License, Version 2.0
 """
@@ -148,23 +134,14 @@ def command_handler(message_buffer, response_buffer):
         # should begin with either EXECUTE/REQUEST depending on whether it expects a return
         logging.info("Received %s", message)
         args = message.split(':')
-        try:
-            command = iris_subsystem.Command(args)
-        except IndexError:
-            logging.info("ERROR %s Requires ':' delimiter between commands", message)
-            response_buffer.put("ERROR Requires ':'")
-            continue
-        except ValueError:
-            logging.info("ERROR %s must begin with REQUEST/EXECUTE/UPDATE", message)
-            response_buffer.put("ERROR does not begin with REQUEST/EXECUTE/UPDATE")
-            continue
+        command = iris_subsystem.Command(args)
+
 
         state = Iris.execute_command(command)
 
         # Only when the command is requesting a response should response be given
         logging.info(state)
-        if command.call == "REQUEST":
-            response_buffer.put(state)
+        response_buffer.put(state)
 
     logging.info("Ending command processing")
 

@@ -65,17 +65,11 @@ class Command: # pylint: disable=too-few-public-methods
            message (list of strings): contains all information for the command
         """
         length = len(message)
-        if length < 2:
-            raise IndexError
-        if message[0] not in ["EXECUTION", "REQUEST", "UPDATE"]:
-            raise ValueError
-
-        self.call = message[0]
-        self.abbrev = message[1]
+        self.abbrev = message[0]
         self.parameters = []
-        for index in range(2, length):
+        for index in range(1, length):
             self.parameters.append(message[index])
-        self.n_params = length - 2
+        self.n_params = length - 1
 
     def __repr__(self):
         return f"Command({self.__dict__!r})"
@@ -137,7 +131,7 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         if not isinstance(command, Command):
             return "ERROR: command must be given using Command class"
         if command.abbrev not in self.get_commands():
-            return "ERROR: command " + command.abbrev + " invalid, type 'REQUEST:HELP'"
+            return "ERROR: command " + command.abbrev + " invalid, type 'HELP' for more info"
         execution = self.executable_commands[command.abbrev]
         if command.n_params != execution[1]:
             return "ERROR: command " + command.abbrev + " expects " + str(execution[1]) + " arg(s)"

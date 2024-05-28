@@ -82,5 +82,30 @@ Successfully saved 2 images
 Continue Commands
 
 EXIT
-USR@usr:.../ex3_simulated_subsystems/IRIS$
+USR@usr:.../ex3_simulated_subsystems/IRIS$ python3 ./iris_simulated_client.py 
+STT:42131321
+
+Receiving response...
+Time updated to 42131321
+Continue Commands
+
+FTH
+
+Receiving response...
+PowerStatus: 1 SensorStatus: 0 NumImages: 0 MaxNumImages: 20 Time: 42131321 Images: ./Server_Photos/ ImageExt: .jpeg TempVIS: 25 TempNIR: 25 TempGATE: 25 TempFLASH: 25 SoftwareVersion: 1.0 
+Continue Commands
+
+RST
+
+Receiving response...
+Factory reset performed.
+Continue Commands
+
+FTH
+
+Receiving response...
+PowerStatus: 1 SensorStatus: 0 NumImages: 0 MaxNumImages: 20 Time: 42131321 Images: ./Server_Photos/ ImageExt: .jpeg TempVIS: 25 TempNIR: 25 TempGATE: 25 TempFLASH: 25 SoftwareVersion: 1.0 DateTime: 1707677962 
+Continue Commands
+
+EXIT
 ```

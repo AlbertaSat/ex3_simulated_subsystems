@@ -4,6 +4,8 @@ from adcs_packet import AdcsPacket, PacketType
 
 
 class TestPacket(TestCase):
+    """Testing the adcs packet class"""
+
     def setUp(self):
         self.dut = AdcsPacket()
         return super().setUp()
@@ -13,11 +15,15 @@ class TestPacket(TestCase):
         return super().tearDown()
 
     def test_byte_of_type(self):
+        """Testing conversion from type enum to bytes"""
         self.assertEqual(self.dut.byte_of_type(PacketType.DATA), b"\x01")
         self.assertEqual(self.dut.byte_of_type(PacketType.CONTROL), b"\x02")
 
     def test_type_of_byte(self):
-        test_eq = lambda x, y: self.assertEqual(self.dut.type_of_byte(x), y)
+        """This test checks if we can convert from a type to a packet"""
+
+        def test_eq(x, y):
+            self.assertEqual(self.dut.type_of_byte(x), y)
 
         test_eq(b"\x01", PacketType.DATA)
         test_eq(b"\x02", PacketType.CONTROL)
@@ -36,6 +42,10 @@ class TestPacket(TestCase):
         self.assertEqual(self.dut.data_length, 0)
         self.dut.data = b"\xDE\xAD\xBE\xEF"
         self.assertEqual(self.dut.data_length, 4)
+
+    def test_byte_of_data(self):
+        """Testing if data can be properly converted."""
+        self.assertEqual(self.dut.byte_of_data("Hi"), b"\x48\x69")
 
 
 if __name__ == "__main__":

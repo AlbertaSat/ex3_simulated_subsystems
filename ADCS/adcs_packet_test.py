@@ -47,6 +47,15 @@ class TestPacket(TestCase):
         """Testing if data can be properly converted."""
         self.assertEqual(self.dut.byte_of_data("Hi"), b"\x48\x69")
 
+    def test_to_bytes(self):
+        """Testing conversion of the adcs packet into bytes"""
+        self.dut.packet_type = PacketType.DATA
+        self.dut.data = "TEST"
+        self.assertEqual(self.dut.to_bytes(), b"\x01\x04\x54\x45\x53\x54")
+
+    def test_from_bytes(self):
+        """This tests the deserialization of a byte stream to a packet"""
+
 
 if __name__ == "__main__":
     unittest.main()

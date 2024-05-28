@@ -37,7 +37,8 @@ class ADCSSubsystem:
         """
         self.commands = {
             b"get_state": self.get_state,
-            b"set": self.set_state,
+            b"on": lambda: self.set_state(ADCSState.WORKING),
+            b"off": lambda: self.set_state(ADCSState.OFF),
             b"get_wheel_speed": self.get_wheel_speed,
             b"set_wheel_speed": self.set_wheel_speed
         }
@@ -136,12 +137,12 @@ if __name__ == "__main__":
 
     adcs_debug.start()
 
-    while True:
+    while True:  # Commands come in this format COMMAND:ARG1:ARG2:...:ARGN
         data = adcs_debug.connection.recv()
         if not data:
             break
         data = command_parser(data)
-        if len(data == 1):  # No params
+        if len(data) == 1:  # No params
             print(adcs_debug.commands[data[0]]())
         else:
-            adcs_debug.commands[data[0]](*data[1:])
+            adcs_debug.commands[data[0]](data[1:])

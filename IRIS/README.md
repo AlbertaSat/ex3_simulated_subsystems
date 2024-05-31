@@ -19,12 +19,22 @@ IRIS is a system on ExAlta3 which is responsible for capturing and storing image
 - As we do not know the expected returns all responses are just placeholders.
 
 ### Commands
-    'TKI': take one image
-    'RST': reset to default
-    'FTI': fetch image, params: # images to fetch 
-    'FTH': fetch housekeeping
-    'STT': set time, params: time to set
     'HELP': list commands and their params
+    ----- System --------
+    'ON': turn camera on
+    'OFF': turn camera off
+    'RST': reset to default
+    ----- Images --------
+    'TKI': take one image
+    'FTI': fetch image, params: # images to fetch 
+    'FNI': fetch number of images
+    'FSI': fetch size of image, params: image # to fetch size of
+    'DTI': delete image, params: image # to delete
+    ----- Housekeeping --------
+    'STT': set time, params: time to set
+    'FTT': fetch current time
+    'FTH': fetch housekeeping
+    
 
 ## Usage
 - The server is run through python PORT is whatever port you wish to use, or leave blank for default port 1821:
@@ -47,13 +57,31 @@ HELP
 
 Receiving response...
 Abbrev: #parameters
+HELP: 0
 TKI: 0
 RST: 0
 FTI: 1
 FTH: 0
 STT: 1
-HELP: 0
+FNI: 0
+FSI: 1
+OFF: 0
+ON: 0
+FTT: 0
+DTI: 1
 
+Continue Commands
+
+TKI
+
+Receiving response...
+Camera is powered off
+Continue Commands
+
+ON
+
+Receiving response...
+Camera successfully turned on
 Continue Commands
 
 TKI
@@ -68,31 +96,61 @@ Receiving response...
 Increased NumImages by 1
 Continue Commands
 
-FAIL
-
-Receiving response...
-ERROR: command FAIL invalid, type 'HELP' for more info
-Continue Commands
-
-FTI:3
+FTI:2
 
 Receiving response...
 Successfully saved 2 images
 
 Continue Commands
 
-EXIT
-USR@usr:.../ex3_simulated_subsystems/IRIS$ python3 ./iris_simulated_client.py 
-STT:42131321
+FTI:4
 
 Receiving response...
-Time updated to 42131321
+Successfully saved 2 images
+
 Continue Commands
 
-FTH
+OFF
 
 Receiving response...
-PowerStatus: 1 SensorStatus: 0 NumImages: 0 MaxNumImages: 20 Time: 42131321 Images: ./Server_Photos/ ImageExt: .jpeg TempVIS: 25 TempNIR: 25 TempGATE: 25 TempFLASH: 25 SoftwareVersion: 1.0 
+Camera successfully turned off
+Continue Commands
+
+FTI:1
+
+Receiving response...
+Successfully saved 1 images
+
+Continue Commands
+
+FTT
+
+Receiving response...
+1707677962
+Continue Commands
+
+STT:123
+
+Receiving response...
+Time updated to 123
+Continue Commands
+
+FTT
+
+Receiving response...
+123
+Continue Commands
+
+FSI:1
+
+Receiving response...
+Image 1 is 6555 bytes.
+Continue Commands
+
+FAIL
+
+Receiving response...
+ERROR: command FAIL invalid, type 'HELP' for more info or EXIT to exit
 Continue Commands
 
 RST
@@ -101,11 +159,11 @@ Receiving response...
 Factory reset performed.
 Continue Commands
 
-FTH
+FTH 
 
 Receiving response...
-PowerStatus: 1 SensorStatus: 0 NumImages: 0 MaxNumImages: 20 Time: 42131321 Images: ./Server_Photos/ ImageExt: .jpeg TempVIS: 25 TempNIR: 25 TempGATE: 25 TempFLASH: 25 SoftwareVersion: 1.0 DateTime: 1707677962 
+PowerStatus: 1 SensorStatus: 0 NumImages: 0 MaxNumImages: 20 Time: 123 Images: ./Server_Photos/ ImageExt: .jpeg TempVIS: 25 TempNIR: 25 TempGATE: 25 TempFLASH: 25 SoftwareVersion: 1.0 DateTime: 1707677962 
 Continue Commands
 
-EXIT
+EXIT 
 ```

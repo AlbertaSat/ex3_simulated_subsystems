@@ -23,6 +23,7 @@ Usage:
 
 Copyright 2023 [Abhishek Naik]. Licensed under the Apache License, Version 2.0
 """
+import os
 
 IRIS_COMMAND_SIZE = 1024
 SIMULATED_MAX_PHOTOS = 3 # This is how many photos we actually have for testing
@@ -98,12 +99,18 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         self.updatable_parameters = ['PowerStatus', 'SensorStatus', 'Time']
         self.executable_commands = {
             # Executable commands in tuple form of command() and n_parameters to command
+            'HELP': (self.command_help,0),
             'TKI': (self.take_image, 0),
             'RST': (self.reset, 0),
             'FTI': (self.get_image, 1),
             'FTH': (self.get_housekeeping, 0),
             'STT': (self.set_time, 1),
-            'HELP': (self.command_help,0)
+            'FNI': (self.num_images,0),
+            'FSI': (self.image_size,1),
+            'OFF': (self.disable_camera,0),
+            'ON': (self.enable_camera,0),
+            'FTT': (self.get_time,0),
+            'DTI': (self.delete_image,1)
         }
 
     def get_commands(self):
@@ -127,11 +134,13 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
 
             command (Command): class containing all information for command
         """
+        if self.state['PowerStatus'] == 0:
+            return "ERROR: IRIS has no power"
         # Simple error checking
         if not isinstance(command, Command):
             return "ERROR: command must be given using Command class"
         if command.abbrev not in self.get_commands():
-            return "ERROR: command " + command.abbrev + " invalid, type 'HELP' for more info"
+            return "ERROR: command " + command.abbrev + " invalid, type 'HELP' for more info or EXIT to exit" # pylint: disable=line-too-long
         execution = self.executable_commands[command.abbrev]
         if command.n_params != execution[1]:
             return "ERROR: command " + command.abbrev + " expects " + str(execution[1]) + " arg(s)"
@@ -145,6 +154,8 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
     #       and parses it for parameters
     def take_image(self):
         """Simulates taking a picture using the IRIS camera."""
+        if self.state['SensorStatus'] == 0:
+            return "Camera is powered off"
         self.state['NumImages'] += 1
         return 'Increased NumImages by 1'
 
@@ -161,8 +172,7 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         n_images = int(params[0])
         current_images = self.state["NumImages"]
         retrieval = []
-        if current_images > SIMULATED_MAX_PHOTOS: # This only matters for simulation purposes
-            current_images = SIMULATED_MAX_PHOTOS
+        current_images = min(current_images, SIMULATED_MAX_PHOTOS) # We have limited photos to fetch
 
         if n_images < current_images:
             current_images = n_images
@@ -171,9 +181,9 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         for count in range(1, current_images + 1):
             image_name = 'image' + str(count) + self.state['ImageExt']
             retrieval.append(image_name)
-            image = open(self.state['Images'] + image_name, 'rb')
-            retrieval.append(image.read())
-            image.close()
+            with open(self.state['Images'] + image_name, 'rb') as image:
+                retrieval.append(image.read())
+                image.close()
 
         return retrieval
 
@@ -185,6 +195,53 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         for pair in self.state.items():
             current_state.append(str(pair[0]) + ": " + str(pair[1]) + " ")
         return current_state
+
+    def num_images(self):
+        """ Fetches how many images stored
+        """
+        return str(self.state['NumImages'])
+
+    def image_size(self, params):
+        """ Fetches the size in bytes of the image stored in the index specified
+            Expects 1 parameter passed: image # to check (indexed beginning at 1)
+            Note: If less images available than the index provided, 0 will be sent
+        """
+        index = int(params[0])
+        size = 0
+        if index <= self.state["NumImages"]:
+            index = min(index, SIMULATED_MAX_PHOTOS)
+            size = os.stat(self.state['Images'] + 'image' + str(index) + self.state['ImageExt']).st_size # pylint: disable=line-too-long
+
+        return "Image " + str(index) + " is " + str(size) + " bytes."
+
+    def disable_camera(self):
+        """ Disable camera from taking images, can still fetch images
+        """
+        self.state['SensorStatus'] = 0
+        return "Camera successfully turned off"
+
+    def enable_camera(self):
+        """ Enable camera to take images
+        """
+        self.state['SensorStatus'] = 1
+        return "Camera successfully turned on"
+
+    def get_time(self):
+        """ Fetches the current time, note that time is not updating
+        """
+        return str(self.state['Time'])
+
+    def delete_image(self, params):
+        """ "Deletes" image of index provided, currently we do not have infinite images
+            so it just decrements the number of images by 1. Ideally they would be stored in an
+            array and popped.
+            Parameters: Index of image to be deleted (int)
+        """
+        index = int(params[0])
+        if index > self.state["NumImages"]:
+            return "Index " + str(index) + " out of range, no image deleted."
+        self.state["NumImages"] -= 1
+        return "Image " + str(index) + " deleted."
 
     def set_time(self, params):
         """Simulates setting the time of the IRIS subsystem

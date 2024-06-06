@@ -172,10 +172,9 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         n_images = int(params[0])
         current_images = self.state["NumImages"]
         retrieval = []
-        current_images = min(current_images, SIMULATED_MAX_PHOTOS) # We have limited photos to fetch
+        # current images should be limited to images available or the max we can simulate
+        current_images = min(current_images, n_images, SIMULATED_MAX_PHOTOS)
 
-        if n_images < current_images:
-            current_images = n_images
         retrieval.append('IMAGES:' + str(current_images))
 
         for count in range(1, current_images + 1):

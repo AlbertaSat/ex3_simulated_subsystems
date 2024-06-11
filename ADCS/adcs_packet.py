@@ -19,7 +19,6 @@ class AdcsPacket:
         ret.packet_type = cls.type_of_byte(input_stream[0].to_bytes(1, "little"))
         data_len = input_stream[1]
         ret.data = input_stream[2 : (2 + data_len)]
-
         return ret
 
     def __init__(self):

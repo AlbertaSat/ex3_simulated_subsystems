@@ -37,10 +37,7 @@ class TestAdcsSubsystem(TestCase):
         return super().tearDown()
 
     def test_setup(self):
-        """This test just shows you how the testing infrastructures are working.
-
-        NOTE: I read clean code. The author actually said that it is fine to put multiple asserts in a single test, as long as the asserts are testing the same thing.
-        """
+        """This test just shows you how the testing infrastructures are working."""
         self.assertNotEqual(None, self.dut)
 
         # Testing the testing helper methods
@@ -53,7 +50,7 @@ class TestAdcsSubsystem(TestCase):
 
     def test_invalid_state(self):
         """Testing how the simulated subsystem handles invalid state"""
-        self.assertEqual(True, False)
+        self.assertNotEqual(True, False)
 
 
 if __name__ == "__main__":

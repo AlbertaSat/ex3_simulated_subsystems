@@ -4,7 +4,14 @@ import sys
 # Custom import
 from abstract_interface import ConnectionProtocol
 from tcp_server import TCPClient
-from adcs_components import AngularMeasurement, AngularSpeed, MagneticMeasurements, WheelSpeed, SystemClock, MagneticCurrent
+from adcs_components import (
+    AngularMeasurement,
+    AngularSpeed,
+    MagneticMeasurements,
+    WheelSpeed,
+    SystemClock,
+    MagneticCurrent,
+)
 from adcs_states import ADCSState
 
 
@@ -40,7 +47,7 @@ class ADCSSubsystem:
             b"on": lambda: self.set_state(ADCSState.WORKING),
             b"off": lambda: self.set_state(ADCSState.OFF),
             b"get_wheel_speed": self.get_wheel_speed,
-            b"set_wheel_speed": self.set_wheel_speed
+            b"set_wheel_speed": self.set_wheel_speed,
         }
 
     def __repr__(self):
@@ -48,8 +55,11 @@ class ADCSSubsystem:
 
     def start(self):
         """This method should start the simulation for the ADCS subsystem."""
+        # Should confirm connection with a handshake
         self.connection.send(b"Hi")
         buffer = self.connection.recv()
+
+        # Start the main loop
 
     def init_link(self):
         """This method should initiate the protocol connection between the OBC and the ADCS"""
@@ -89,11 +99,15 @@ class ADCSSubsystem:
 
     def get_current(self) -> tuple[float, float, float]:
         """Gets the magnetorquer currents in mA"""
-        return (self.magnetic_current.x, self.magnetic_current.y, self.magnetic_current.z)
+        return (
+            self.magnetic_current.x,
+            self.magnetic_current.y,
+            self.magnetic_current.z,
+        )
 
     def simulate_step(self, time_inc: float):
         """
-        This method will simulate stepping 'time_inc' 
+        This method will simulate stepping 'time_inc'
         seconds into the future.
         """
         raise NotImplementedError

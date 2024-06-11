@@ -4,10 +4,10 @@ class ThreeDimensionalMeasurements:
     dimensional stored values
     """
 
-    @staticmethod
-    def new():
-        """Factory method test"""
-        return ThreeDimensionalMeasurements(0, 0, 0)
+    @classmethod
+    def new(cls):
+        """Factory method with default values"""
+        return cls(0, 0, 0)
 
     def __init__(self, x, y, z):
         self.x = x

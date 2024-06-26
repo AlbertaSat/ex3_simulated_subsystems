@@ -6,7 +6,7 @@ It can either be hosted: on a PC, allowing the FSW to connect over TCP/IP, or on
 
 ## Simulated Subsystem Manager
 
-## Simulated Subsystem Design Philosophy:
+## Simulated Subsystem Design Philosophy
 
 - Each simulated subsystem will be created to run independently from the rest of the simulated system as a full python program.
     - This can be done by creatine a `if __name__ == "__main__":` block in the subsystem's main file where code will go that will start a process that will run the subsystem. This process must either: contain a TCP/IP socket to communicate to a respective flight softwares subsystems TCP/IP interface, or through the proper hardware interface that subsystem uses (I2C, SPI, etc) on the Zybo Z7-20.
@@ -17,11 +17,10 @@ It can either be hosted: on a PC, allowing the FSW to connect over TCP/IP, or on
 - If the External Simulation does not provide data for a given subsystem, the subsystem should be able to run independently of the External Simulation using locally provided data.
 - Object Oriented design principles and clean code practices should be used as much possible! See: https://gist.github.com/wojteklu/73c6914cc446146b8b533c0988cf8d29
 
-### Documentation 
-- 
+### Documentation
+
+- Each subsystem should define its usage in a docstring at the top of the main subsystem source file.
 
 &nbsp;
 
 Please see [the contribution guidelines](.github/CONTRIBUTING.md) for expectations with contributing, such as branch naming conventions and branching etiquette.
-
-

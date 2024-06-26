@@ -26,10 +26,12 @@ Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
 """
 
 import sys
-sys.path.append("../")
-from socket_stuff import create_socket_and_listen   # pylint: disable=C0413
-from command_handler import CommandHandler          # pylint: disable=C0413
-from command_factory import CommandFactory          # pylint: disable=C0413
+from os import path
+sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # Add parent directory to path so we can import modules from there
+
+from Common.socket_stuff import create_socket_and_listen   # pylint: disable=C0413
+from Common.command_handler import CommandHandler          # pylint: disable=C0413
+from Common.command_factory import CommandFactory          # pylint: disable=C0413
 
 
 DEFAULT_HOST = '127.0.0.1'

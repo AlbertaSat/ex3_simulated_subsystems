@@ -37,10 +37,12 @@ import sys
 import threading
 import random
 
-sys.path.append('../') # Add parent directory to path so we can import modules from there
-import socket_stuff # pylint: disable=C0413
-import command_handler # pylint: disable=C0413
+from os import path
+sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # Add parent directory to path so we can import modules from there
 
+import Common.socket_stuff as socket_stuff # pylint: disable=C0413
+import Common.command_handler as command_handler # pylint: disable=C0413
+import Common.command_factory as command_factory # pylint: disable=C0413
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1811

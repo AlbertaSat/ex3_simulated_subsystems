@@ -5,7 +5,7 @@ TXRX                                      ! IPC Mode (OFF,TX,RX,TXRX,ACS,WRITEFI
 0                                       ! AC.ID for ACS mode
 "State00.42"                            ! File name for WRITE or READ
 SERVER                                  ! Socket Role (SERVER,CLIENT,GMSEC_CLIENT)
-localhost     10002                     ! Server Host Name, Port 
+localhost     10001                     ! Server Host Name, Port 
 FALSE                                    ! Allow Blocking (i.e. wait on RX)
 FALSE                                    ! Echo to stdout
 3                                       ! Number of TX prefixes

@@ -6,7 +6,8 @@ import subprocess
 import sys
 
 path_to_script = path.dirname(path.abspath(__file__))
-path_to_42 = path.join(path_to_script, "..", "..", "42", "42")
+path_to_42 = path.join(path_to_script, "..", "..", "..", "42", "42")
+path_to_42_setup = path_to_script + "/ex3"
 
 state_dictionary = {
     'dfgm': {
@@ -24,11 +25,12 @@ state_dictionary = {
 class FTInterface:
     def __init__(self, exec_path=path_to_42):
         print(f"Starting 42 simulation at {exec_path}")
+        print(f"Using setup file at {path_to_42_setup}")
         # Launch the 42 simulation
         sys.path.append(exec_path)
         
         # Start the 42 simulation
-        self.simulator = subprocess.Popen([exec_path], cwd=exec_path[:-3], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        self.simulator = subprocess.Popen([exec_path, "../ex3_simulated_subsystems/ExternalSimulation/42/ex3"], cwd=exec_path[:-3])
 
         # Initialize mutex and state dictionary for the FT
         self.data = {}
@@ -36,12 +38,17 @@ class FTInterface:
         
         # # Connect to localhost:10001 TCP/IP socket
         print("Connecting to server")
+
+        count = 0
         while True:
             try:
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect(('localhost', 10001))
                 break
             except ConnectionRefusedError:
+                count += 1
+                if count > 10:
+                    print("42 Connection refused. Exiting")
                 print("42 Connection refused. Retrying in 1 second")
                 time.sleep(1)
         

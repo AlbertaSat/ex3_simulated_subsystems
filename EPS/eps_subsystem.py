@@ -29,9 +29,9 @@ import sys
 from os import path
 sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) ) # Add parent directory to path so we can import modules from there
 
-from Common.socket_stuff import create_socket_and_listen   # pylint: disable=C0413
-from Common.command_handler import CommandHandler          # pylint: disable=C0413
-from Common.command_factory import CommandFactory          # pylint: disable=C0413
+from Legacy.socket_stuff import create_socket_and_listen   # pylint: disable=C0413
+from Legacy.command_handler import CommandHandler          # pylint: disable=C0413
+from Legacy.command_factory import CommandFactory          # pylint: disable=C0413
 
 
 DEFAULT_HOST = '127.0.0.1'

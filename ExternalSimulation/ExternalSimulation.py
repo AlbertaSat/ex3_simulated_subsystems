@@ -11,8 +11,10 @@ class ExternalSimulationProvider:
     Any reads to the state dictionary should only need to check if the mutex is locked, wait for it to be unlocked, and then read the state dictionary.
 
     Attributes:
+    name: Name of the simulation provider
+    available_data: List of data types provided by the simulation
     data: Dictionary containing the state of the simulation
-    state_mutex: Mutex for 'controlling' access to the state dictionary
+    state_mutex: Mutex for ensuring atomic updates to the state dictionary
     observers: List of observers of the simulation state
     thread: Thread for running the simulation client
 
@@ -21,11 +23,15 @@ class ExternalSimulationProvider:
     notify: Notify all observers of a state change
     start: Start the simulation client thread
     update: Update the simulation state
+    check_support: Check if the simulation provider supports a specific data type
 
     """
-    def __init__(self):
+    def __init__(self, name, state_dictionary):
         # Initialize mutex, state dictionary, and observers
-        self.data = {}
+        self.name = name
+        self.available_data = state_dictionary.keys()
+        self.state = state_dictionary
+        self.raw_data = {}
         self.state_mutex = Lock()
         self.observers = []
 
@@ -50,8 +56,20 @@ class ExternalSimulationProvider:
         self.thread.start()
 
     def update(self):
-        # To be implemented by subclasses
-        pass
+        # Should be implemented by any derived classes
+        raise NotImplementedError
+    
+    def check_support(self, data_type):
+        """Check if the simulation provider supports a specific data type
+        """
+        return data_type in self.available_data
+
+    def get_data(self, data_type):
+        """Get the current state data from the simulation
+        """
+        # Check if the mutex is locked
+        if not self.state_mutex.locked():
+            return self.state[data_type]
 
 class ExternalSimulationObserver:
     """Abstract class for observing an external simulation provider
@@ -61,5 +79,5 @@ class ExternalSimulationObserver:
         self.provider.attach(self)
 
     def update(self):
-        # To be implemented by subclasses
-        pass
+        # Should be implemented by any derived classes
+        raise NotImplementedError

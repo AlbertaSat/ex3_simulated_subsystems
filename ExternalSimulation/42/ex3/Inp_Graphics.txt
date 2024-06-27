@@ -13,7 +13,7 @@ SC                                 !  Target Type (WORLD, REFORB, FRM, SC, BODY)
 0  0  L                            !  Initial Target SC, Body, POV Frame
 POS_X                              !  Boresight Axis
 NEG_Z                              !  Up Axis
-40.0                               !  Initial POV Range from Target [m]
+3.0                               !  Initial POV Range from Target [m]
 30.0                               !  POV Angle (Vertical) [deg]
 0.0  0.0  0.0                      !  POV Position in Host [m]
 FRONT                              !  Initial POV View (FRONT, FRONT_RIGHT, etc)

@@ -68,8 +68,10 @@ class ExternalSimulationProvider:
         """Get the current state data from the simulation
         """
         # Check if the mutex is locked
-        if not self.state_mutex.locked():
-            return self.state[data_type]
+        while self.state_mutex.locked():
+            pass
+        
+        return self.state[data_type]
 
 class ExternalSimulationObserver:
     """Abstract class for observing an external simulation provider

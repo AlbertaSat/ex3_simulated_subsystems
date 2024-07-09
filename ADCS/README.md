@@ -42,6 +42,16 @@ docker build -t adcs_server .
 docker run -dp 127.0.0.1:8838:8838 adcs_server
 ```
 
+## Testing the Subsystem
+
+To test the subsystem run the adcs_server.py file, and connect to the server using some program/utility such as `nc`
+
+```bash
+nc localhost 42123 
+```
+
+From there you can send commands such as `HELP` from the client side.
+
 ## Testing Table
 
 ### ADCS Subsystem

@@ -46,6 +46,7 @@ ENV PYTHONPATH "${PYTHONPATH}:./utils"
 #Copy code into container. I needed to change the build context to the whole repo for this.
 
 ARG FOLDERNAME=${FOLDERNAME}
+#ARG PORT=${PORT}
 
 COPY ./${FOLDERNAME}/* /app
 COPY ./${BUILDDIR}/entrypoint.sh /app/entrypoint.sh
@@ -56,10 +57,10 @@ RUN chown -R appuser ./*
 USER appuser
 
 # Expose the port that the application listens on.
-EXPOSE 8000
+#EXPOSE ${PORT}
 
 # Run the application.
 
 ENTRYPOINT ./entrypoint.sh
 
-#CMD ["python", "test.py"]
+#CMD "python" ${PROGRAM}

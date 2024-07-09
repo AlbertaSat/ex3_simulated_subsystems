@@ -25,10 +25,10 @@ services:
       watch:
         - action: sync+restart
           path: ./EPS
-          target: /app 
+          target: /app
     ports:
       - 1801:1801
-                
+
   deployables:
     environment:
       - PROGRAM=deployables_subsystem.py
@@ -44,7 +44,7 @@ services:
       watch:
         - action: sync+restart
           path: ./Deployables
-          target: /app     
+          target: /app
     ports:
       - 1811:1811
 
@@ -93,6 +93,3 @@ volumes:
       type: none
       device: ../Utilities
       o: bind
-
-
-

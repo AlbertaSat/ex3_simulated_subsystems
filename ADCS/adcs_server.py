@@ -6,10 +6,10 @@ import sys
 import threading
 import time
 
-from tcp_server import TCPClient, TcpListener
+from tcp_server import TcpListener
 from adcs_subsystem import ADCSSubsystem
 
-SLEEP_TIME = 5
+SLEEP_TIME = 5  # in seconds
 
 
 def command_line_handler(argv) -> tuple[int, str]:
@@ -50,7 +50,7 @@ def listen(adcs: ADCSSubsystem, stop: threading.Event):
                 time.sleep(SLEEP_TIME)
                 return
             adcs.rx_buffer.put(received)
-        except:
+        except Exception:
             continue
 
 
@@ -70,8 +70,8 @@ def handle_input(adcs: ADCSSubsystem, stop: threading.Event):
             handle_output_thread = threading.Thread(
                 target=handle_output, args=(adcs, data_list), daemon=True)
             handle_output_thread.start()
-        except:
-            return
+        except Exception:
+            continue
 
 
 def handle_output(adcs: ADCSSubsystem, data_list: list):
@@ -98,7 +98,7 @@ def send(adcs: ADCSSubsystem, stop: threading.Event):
         try:
             transmitting = adcs.tx_buffer.get(timeout=SLEEP_TIME)
             adcs.send_bytes(transmitting)
-        except:
+        except Exception:
             continue
 
 
@@ -116,8 +116,7 @@ def run_command(data, adcs):
         arg_list = data[1:]
         return func(*arg_list)
     except KeyError:
-        invalid_args = "INVALID COMMAND: run \"HELP\" for list of commands"
-        return invalid_args
+        return "INVALID COMMAND: run \"HELP\" for list of commands\n"
 
 
 if __name__ == "__main__":
@@ -132,9 +131,7 @@ if __name__ == "__main__":
     server.connect()
 
     adcs_debug = ADCSSubsystem(server)
-    # adcs_debug.start()
 
-    # TODO: get threads to end when this is true
     stop_event = threading.Event()  # used to stop child threads
 
     rx_thread = threading.Thread(target=listen, args=(
@@ -148,7 +145,7 @@ if __name__ == "__main__":
     tx_thread.start()
     handle_input_thread.start()
 
-    while not stop_event.is_set():  # Commands come in this format COMMAND:ARG1:ARG2:...:ARGN
+    while not stop_event.is_set():
         try:
             time.sleep(SLEEP_TIME)
         except KeyboardInterrupt:

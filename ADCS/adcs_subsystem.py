@@ -1,10 +1,13 @@
+"""
+Holds the ADCSSubsystem class
+"""
+
 # Python stdlib
 from queue import SimpleQueue
 import random
 
 # Custom import
 from abstract_interface import ConnectionProtocol
-from tcp_server import TCPClient
 from adcs_components import AngularMeasurement, AngularSpeed, MagneticMeasurements, WheelSpeed, SystemClock, MagneticCurrent
 from adcs_states import ADCSState
 
@@ -32,17 +35,8 @@ class ADCSSubsystem:
 
         self.connection = connection_protocol
 
-        """
-        List of commands to be added:
-        Detumble (skip for now)
-        On/off
-        X,y,z wheel speed
-        Status check/Housekeeping
-        X,y,z magnetorquer speed
-        Onboard time
-        Orientation
-        reset
-        """
+        # For full list of commands go here:
+        # https://docs.google.com/spreadsheets/d/1rWde3jjrgyzO2fsg2rrVAKxkPa2hy-DDaqlfQTDaNxg/edit?gid=0#gid=0
         self.commands = {
             "HELP": self.help,
             "GS": self.get_state,
@@ -62,21 +56,16 @@ class ADCSSubsystem:
     def __repr__(self):
         return f"ADCSSubsystem(\n" + f"{self.__dict__!r}" f"\n)"
 
-    def start(self):
-        """This method should start the simulation for the ADCS subsystem."""
-        self.connection.send(b"Hi")
-        buffer = self.connection.recv()
-
     def init_link(self):
         """This method should initiate the protocol connection between the OBC and the ADCS"""
-        raise NotImplementedError
+        self.connection.connect()
 
     def send_bytes(self, data: bytes) -> None:
         """This method sends bytes to the connected OBC"""
         self.connection.send(data)
 
-    def read_bytes(self, timeout: float = -1) -> bytes:
-        """Wrapper function around the connection protocol"""
+    def read_bytes(self, timeout: float = None) -> bytes:
+        """This method reads bytes from the OBC"""
         return self.connection.recv(timeout)
 
     def turn_on(self):
@@ -89,19 +78,17 @@ class ADCSSubsystem:
 
     def status_check(self):
         """Generates random numbers for a status"""
-        voltage = random.random() * 2 + 7
+        voltage = random.random() * 2 + 8
         current = random.random() * 5 + 10
         temp = random.random() * 10 + 30
         status = "OK" if random.random() >= 0.2 else "BAD"
 
-        return f"Voltage: {voltage} V\nCurrent: {current} mA\nTemperature: {temp}C\nOverall Status: {status}\n"
+        return f"Voltage: {voltage} V\nCurrent: {current} mA\
+\nTemperature: {temp} C\nOverall Status: {status}\n"
 
     def get_state(self):
         """Returns the state of the ADCS"""
-        if (self.state == ADCSState.OFF):
-            return "OFF"
-        else:  # (self.state == ADCSState.WORKING):
-            return "WORKING"
+        return "OFF" if self.state == ADCSState.OFF else "WORKING"
 
     def get_time(self):
         """Gets the clock time"""
@@ -153,16 +140,16 @@ class ADCSSubsystem:
 
     def help(self):
         """Returns a string with commands"""
-        return '    HELP: help,\n \
-    GS | Get State (OFF or WORKING)\n \
-    ON | Set state WORKING\n \
-    OFF | Set state OFF\n \
-    GWS | Get wheel speed (tuple)\n \
-    SWS:x:y:z | set wheel speed\n \
-    GMC | get magnetorquer current\n \
-    SMC:x:y:z | set magnetorquer current\n \
-    SC | Status Check\n \
-    GTM | Get time (float)\n \
-    STM:float | Set time\n \
-    GOR | Get orientation (tuple)\n \
-    RESET | Resets wheels and magnetorquer\n'
+        return 'HELP | help (string)\n\
+GS | Get State (OFF or WORKING)\n\
+ON | Set state WORKING\n\
+OFF | Set state OFF\n\
+GWS | Get wheel speed (tuple)\n\
+SWS:x:y:z | set wheel speed\n\
+GMC | get magnetorquer current (tuple)\n\
+SMC:x:y:z | set magnetorquer current\n\
+SC | Status Check (string)\n\
+GTM | Get time (float)\n\
+STM:float | Set time\n\
+GOR | Get orientation (tuple)\n\
+RESET | Resets wheels and magnetorquer\n'

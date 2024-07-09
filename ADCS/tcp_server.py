@@ -1,9 +1,14 @@
+"""Holds the TcpListener class allowing the creation of TCP servers"""
+
 import socket
-from typing import Optional
 from abstract_interface import ConnectionProtocol
 
 
 class TcpListener(ConnectionProtocol):
+    """
+    The abstract implementation of a TCP server
+    """
+
     def __init__(self, port: int, host: str):
         """ """
         self.listening_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,6 +24,7 @@ class TcpListener(ConnectionProtocol):
         self.debug = False
 
     def set_debug(self, mode: bool):
+        """Turns on/off the debugging mode of the ADCS"""
         self.debug = mode
 
     def connect(self):
@@ -36,12 +42,15 @@ class TcpListener(ConnectionProtocol):
             print(f"SENT {data}")
 
     def recv(self, timeout: float) -> bytes:
-        """Recieves data from the client"""
+        """Receives data from the client"""
         buffer_size = 256
-        if (timeout > 0):
+
+        if timeout is None or timeout > 0:
             self.connection_socket.settimeout(timeout)
+
         buffer = self.connection_socket.recv(buffer_size)
         self.connection_socket.settimeout(None)
+
         if self.debug:
             print(f"RECV f{buffer}")
         return buffer
@@ -54,26 +63,3 @@ class TcpListener(ConnectionProtocol):
         TcpListener destructor. When no longer used, we should free up resources.
         """
         self.listening_sock.close()
-
-
-class TCPClient(ConnectionProtocol):
-    def __init__(self, addr):
-        self.addr = addr
-        self.debug = False
-        self.socket = socket.create_connection(self.addr)
-
-    def set_debug(self, mode: bool):
-        self.debug = mode
-
-    def send(self, data):
-        """Please give input in the form of a list of bytes"""
-        self.socket.sendall(data)
-        if self.debug:
-            print(f"Sent: {data}")
-
-    def recv(self):
-        """Received from the connection and returns the data"""
-        buffer = self.socket.recv(4096)
-        if self.debug:
-            print(f"Received: {buffer}")
-        return buffer

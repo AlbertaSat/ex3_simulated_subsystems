@@ -1,6 +1,7 @@
 # Python stdlib
 import sys
 from queue import SimpleQueue
+import random
 
 # Custom import
 from abstract_interface import ConnectionProtocol
@@ -32,10 +33,7 @@ class ADCSSubsystem:
 
         self.connection = connection_protocol
 
-        """  TODO: enumarate each function
-        This dictionary will contain the "machine code" translations 
-        for every possible command.
-
+        """
         List of commands to be added:
         Detumble (skip for now)
         On/off
@@ -53,7 +51,9 @@ class ADCSSubsystem:
             "OFF": self.turn_off,
             "GWS": self.get_wheel_speed,
             "SWS": self.set_wheel_speed,
-            "SC": "Status Check",  # TODO: check ex2 documents and find temp, volt, amp ratings
+            "SC": self.status_check,
+            "SMC": self.set_magnetorquer_current,
+            "GMC": self.get_magnetorquer_current,
             "GTM": self.get_time,
             "STM": self.set_time,
             "GOR": self.get_orientation,
@@ -76,9 +76,9 @@ class ADCSSubsystem:
         """This method sends bytes to the connected OBC"""
         self.connection.send(data)
 
-    def read_bytes(self) -> bytes:
+    def read_bytes(self, timeout: float = -1) -> bytes:
         """Wrapper function around the connection protocol"""
-        return self.connection.recv()
+        return self.connection.recv(timeout)
 
     def turn_on(self):
         """Turns on the ADCS"""
@@ -88,6 +88,15 @@ class ADCSSubsystem:
         """Puts ADCS in standby"""
         self.state = ADCSState.OFF
 
+    def status_check(self):
+        """Generates random numbers for a status"""
+        voltage = random.random() * 2 + 7
+        current = random.random() * 5 + 10
+        temp = random.random() * 10 + 30
+        status = "OK" if random.random() >= 0.5 else "BAD"
+
+        return f"Voltage: {voltage}V\nCurrent: {current}mA\nTemperature: {temp}C\nOverall Status: ${status}"
+
     def get_state(self):
         """Returns the state of the ADCS"""
         if (self.state == ADCSState.OFF):
@@ -96,30 +105,39 @@ class ADCSSubsystem:
             return "WORKING"
 
     def get_time(self):
+        """Gets the clock time"""
         return self.system_clock.time
 
-    def set_time(self, time):  # TODO: because of how i implemented this "time" is wrapped in an array
+    def set_time(self, time):
         """Sets the clock time"""
-        self.system_clock.time = time[0]
+        self.system_clock.time = time
 
-    def set_wheel_speed(self, wheels: tuple[str, str, str]):
+    def set_wheel_speed(self, wheels_x, wheels_y, wheels_z):
         """Sets the wheel speed in RPM"""
-        float_wheels = [float(x) for x in wheels]
-        self.wheel_speed.x = float_wheels[0]
-        self.wheel_speed.y = float_wheels[1]
-        self.wheel_speed.z = float_wheels[2]
+        self.wheel_speed.x = float(wheels_x)
+        self.wheel_speed.y = float(wheels_y)
+        self.wheel_speed.z = float(wheels_z)
 
     def get_wheel_speed(self) -> tuple[float, float, float]:
+        """Gets the magnetorquer current in mA"""
+        return (self.wheel_speed.x, self.wheel_speed.y, self.wheel_speed.z)
+
+    def set_magnetorquer_current(self, current_x, current_y, current_z):
+        """Sets the magnetorquer current in mA"""
+        self.wheel_speed.x = float(current_x)
+        self.wheel_speed.y = float(current_y)
+        self.wheel_speed.z = float(current_z)
+
+    def get_magnetorquer_current(self) -> tuple[float, float, float]:
         """Gets the wheel speeds in RPM"""
         return (self.wheel_speed.x, self.wheel_speed.y, self.wheel_speed.z)
 
-    def set_current(self, currents: tuple[str, str, str]):
+    def set_current(self, currents_x, currents_y, currents_z):
         """Sets the magnetorquer currents in mA"""
         # TODO: Check if magnetorquer is measured in mA
-        float_currents = [float(x) for x in currents]
-        self.magnetic_current.x = float_currents[0]
-        self.magnetic_current.y = float_currents[1]
-        self.magnetic_current.z = float_currents[2]
+        self.magnetic_current.x = float(currents_x)
+        self.magnetic_current.y = float(currents_y)
+        self.magnetic_current.z = float(currents_z)
 
     def get_current(self) -> tuple[float, float, float]:
         """Gets the magnetorquer currents in mA"""
@@ -132,22 +150,24 @@ class ADCSSubsystem:
     def reset(self):
         """Resets the wheels and magnetorquer"""
         empty_block = (0, 0, 0)
-        self.set_wheel_speed(empty_block)
-        self.set_current(empty_block)
+        self.set_wheel_speed(*empty_block)
+        self.set_current(*empty_block)
 
     def help(self):
-        """TODO: finish help command"""
-        return 'HELP": help,\n \
-        GS | Get State (OFF or WORKING)\n \
-        ON | Set state WORKING \
-        OFF | Set state OFF \
-        GWS | Get wheel speed (tuple) \
-        SWS:x:y:z | set wheel speed \
-        SC | Status Check (not implemented), \
-        GTM | Get time (float) \
-        STM:float | Set time \
-        GOR | Get orientation (tuple) \
-        RESET | Resets wheels and magnetorquer'
+        """Returns a string with commands"""
+        return '    HELP: help,\n \
+    GS | Get State (OFF or WORKING)\n \
+    ON | Set state WORKING\n \
+    OFF | Set state OFF\n \
+    GWS | Get wheel speed (tuple)\n \
+    SWS:x:y:z | set wheel speed\n \
+    GMC | get magnetorquer current\n \
+    SMC:x:y:z | set magnetorquer current\n \
+    SC | Status Check\n \
+    GTM | Get time (float)\n \
+    STM:float | Set time\n \
+    GOR | Get orientation (tuple)\n \
+    RESET | Resets wheels and magnetorquer\n'
 
     def simulate_step(self, time_inc: float):
         """

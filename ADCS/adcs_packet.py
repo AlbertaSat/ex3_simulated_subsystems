@@ -16,9 +16,10 @@ class AdcsPacket:
     def from_bytes(cls, input_stream: bytes):
         """Constructs an ADCS packet from bytes"""
         ret = cls()
-        ret.packet_type = cls.type_of_byte(input_stream[0].to_bytes(1, "little"))
+        ret.packet_type = cls.type_of_byte(
+            input_stream[0].to_bytes(1, "little"))
         data_len = input_stream[1]
-        ret.data = input_stream[2 : (2 + data_len)]
+        ret.data = input_stream[2: (2 + data_len)]
 
         return ret
 
@@ -69,7 +70,8 @@ class AdcsPacket:
             case b"\x02":
                 ret = PacketType.CONTROL
             case b"\x00":
-                raise RuntimeError("The generating end found an unhandled PacketType")
+                raise RuntimeError(
+                    "The generating end found an unhandled PacketType")
             case _:
                 raise RuntimeError("Like error during transmission")
         return ret

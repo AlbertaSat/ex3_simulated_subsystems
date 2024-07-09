@@ -1,5 +1,11 @@
+"""
+This module will hold a class to create and read packets
+that the ADCS will expect.
+
+It is currently not used in favour of letting TCP handle packets
+"""
+
 from enum import Enum, auto
-from typing import Union
 
 
 class PacketType(Enum):
@@ -79,5 +85,4 @@ class AdcsPacket:
     def __eq__(self, value: object, /) -> bool:
         if type(value) is type(self):
             return value.packet_type == self.packet_type and value.data == self.data
-        else:
-            return False
+        return False

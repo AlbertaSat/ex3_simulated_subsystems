@@ -5,6 +5,7 @@ This will be the main file for the simulated ADCS subsystem.
 import sys
 import threading
 import time
+from queue import Empty  # Import is needed from use of queue timeouts
 
 from tcp_server import TcpListener
 from adcs_subsystem import ADCSSubsystem
@@ -47,10 +48,9 @@ def listen(adcs: ADCSSubsystem, stop: threading.Event):
             received = adcs.read_bytes(timeout=SLEEP_TIME)
             if not received:
                 stop.set()  # begin closing server
-                time.sleep(SLEEP_TIME)
                 return
             adcs.rx_buffer.put(received)
-        except Exception:
+        except TimeoutError:
             continue
 
 
@@ -70,7 +70,7 @@ def handle_input(adcs: ADCSSubsystem, stop: threading.Event):
             handle_output_thread = threading.Thread(
                 target=handle_output, args=(adcs, data_list), daemon=True)
             handle_output_thread.start()
-        except Exception:
+        except Empty:
             continue
 
 
@@ -98,11 +98,11 @@ def send(adcs: ADCSSubsystem, stop: threading.Event):
         try:
             transmitting = adcs.tx_buffer.get(timeout=SLEEP_TIME)
             adcs.send_bytes(transmitting)
-        except Exception:
+        except Empty:
             continue
 
 
-def run_command(data, adcs):
+def run_command(data: list, adcs: ADCSSubsystem):
     """
     Given a list of stings this will run an adcs command with
     some given arguments. Returns anything that the adcs command
@@ -126,20 +126,18 @@ if __name__ == "__main__":
     print(f"Starting ADCS subsystem on port {port}")
 
     server = TcpListener(port, host)
-    server.set_debug(True)
 
-    server.connect()
-
-    adcs_debug = ADCSSubsystem(server)
+    adcs_subsystem = ADCSSubsystem(server)
+    adcs_subsystem.init_link()  # opens the server
 
     stop_event = threading.Event()  # used to stop child threads
 
     rx_thread = threading.Thread(target=listen, args=(
-        adcs_debug, stop_event), daemon=True)
+        adcs_subsystem, stop_event), daemon=True)
     tx_thread = threading.Thread(target=send, args=(
-        adcs_debug, stop_event), daemon=True)
+        adcs_subsystem, stop_event), daemon=True)
     handle_input_thread = threading.Thread(target=handle_input, args=(
-        adcs_debug, stop_event), daemon=True)
+        adcs_subsystem, stop_event), daemon=True)
 
     rx_thread.start()
     tx_thread.start()
@@ -150,8 +148,7 @@ if __name__ == "__main__":
             time.sleep(SLEEP_TIME)
         except KeyboardInterrupt:
             stop_event.set()
-            time.sleep(SLEEP_TIME)
 
-    rx_thread.join()
-    tx_thread.join()
     handle_input_thread.join()
+    tx_thread.join()
+    rx_thread.join()

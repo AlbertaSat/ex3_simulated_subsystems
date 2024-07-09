@@ -1,5 +1,4 @@
 # Python stdlib
-import sys
 from queue import SimpleQueue
 import random
 
@@ -93,9 +92,9 @@ class ADCSSubsystem:
         voltage = random.random() * 2 + 7
         current = random.random() * 5 + 10
         temp = random.random() * 10 + 30
-        status = "OK" if random.random() >= 0.5 else "BAD"
+        status = "OK" if random.random() >= 0.2 else "BAD"
 
-        return f"Voltage: {voltage}V\nCurrent: {current}mA\nTemperature: {temp}C\nOverall Status: ${status}"
+        return f"Voltage: {voltage} V\nCurrent: {current} mA\nTemperature: {temp}C\nOverall Status: {status}\n"
 
     def get_state(self):
         """Returns the state of the ADCS"""
@@ -134,7 +133,6 @@ class ADCSSubsystem:
 
     def set_current(self, currents_x, currents_y, currents_z):
         """Sets the magnetorquer currents in mA"""
-        # TODO: Check if magnetorquer is measured in mA
         self.magnetic_current.x = float(currents_x)
         self.magnetic_current.y = float(currents_y)
         self.magnetic_current.z = float(currents_z)
@@ -168,60 +166,3 @@ class ADCSSubsystem:
     STM:float | Set time\n \
     GOR | Get orientation (tuple)\n \
     RESET | Resets wheels and magnetorquer\n'
-
-    def simulate_step(self, time_inc: float):
-        """
-        This method will simulate stepping 'time_inc' 
-        seconds into the future.
-        """
-        raise NotImplementedError
-
-
-def command_line_handler(argv) -> tuple[int, str]:
-    """
-    Control flow for what to return depending on the commandline arg.
-
-    **Change here if you need to change the port and address values**
-
-    Returns:
-        (PORT, HOST)
-    """
-
-    default_host = "127.0.0.1"
-    default_port = 42123
-
-    ret_port = int(argv[1]) if len(argv) > 1 else default_port
-    ret_host = argv[2] if len(argv) > 2 else default_host
-
-    return ret_port, ret_host
-
-
-def command_parser(data: bytes):
-    """Splits the command from its parameters using colons (:)"""
-    parsed = data.split(sep=b":")
-    return parsed
-
-
-# TODO: Replace all things with rx (recv) buffers and tx (send) buffers
-if __name__ == "__main__":
-    port, host = command_line_handler(sys.argv)
-    addr = (host, port)
-
-    print(f"Starting ADCS subsystem on port {port}")
-
-    connector = TCPClient(addr)
-    connector.set_debug(True)
-
-    adcs_debug = ADCSSubsystem(connector)
-
-    adcs_debug.start()
-
-    while True:  # Commands come in this format COMMAND:ARG1:ARG2:...:ARGN
-        data = adcs_debug.connection.recv()
-        if not data:
-            break
-        data = command_parser(data)
-        if len(data) == 1:  # No params
-            print(adcs_debug.commands[data[0]]())
-        else:
-            adcs_debug.commands[data[0]](data[1:])

@@ -36,6 +36,7 @@ class TcpListener(ConnectionProtocol):
             print(f"SENT {data}")
 
     def recv(self, timeout: float) -> bytes:
+        """Recieves data from the client"""
         buffer_size = 256
         if (timeout > 0):
             self.connection_socket.settimeout(timeout)

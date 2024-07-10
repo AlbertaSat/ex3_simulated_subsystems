@@ -12,6 +12,8 @@ from adcs_subsystem import ADCSSubsystem
 
 SLEEP_TIME = 5  # in seconds
 EXIT_FLAG = b"EXIT"
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 42123
 
 
 def command_line_handler(argv) -> tuple[int, str]:
@@ -24,11 +26,8 @@ def command_line_handler(argv) -> tuple[int, str]:
         (PORT, HOST)
     """
 
-    default_host = "127.0.0.1"
-    default_port = 42123
-
-    ret_port = int(argv[1]) if len(argv) > 1 else default_port
-    ret_host = argv[2] if len(argv) > 2 else default_host
+    ret_port = int(argv[1]) if len(argv) > 1 else DEFAULT_PORT
+    ret_host = argv[2] if len(argv) > 2 else DEFAULT_HOST
 
     return ret_port, ret_host
 

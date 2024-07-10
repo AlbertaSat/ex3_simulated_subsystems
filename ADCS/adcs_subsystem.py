@@ -8,11 +8,12 @@ import random
 
 # Custom import
 from abstract_interface import ConnectionProtocol
-from adcs_components import AngularMeasurement, AngularSpeed, MagneticMeasurements, WheelSpeed, SystemClock, MagneticCurrent
+from adcs_components import AngularMeasurement, AngularSpeed, \
+    MagneticMeasurements, WheelSpeed, SystemClock, MagneticCurrent
 from adcs_states import ADCSState
 
 
-class ADCSSubsystem:
+class ADCSSubsystem:  # pylint: disable=too-many-instance-attributes
     """
     This class represents the simulated ADCS subsystem.
     """
@@ -54,7 +55,7 @@ class ADCSSubsystem:
         }
 
     def __repr__(self):
-        return f"ADCSSubsystem(\n" + f"{self.__dict__!r}" f"\n)"
+        return "ADCSSubsystem(\n" + f"{self.__dict__!r}" f"\n)"
 
     def init_link(self):
         """This method should initiate the protocol connection between the OBC and the ADCS"""

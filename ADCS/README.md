@@ -8,7 +8,7 @@ system that controls the orientation of ex3.
 The ADCS is used to help steer the satellite.
 
 ## Commands
-All currently implemented commands are listed in the following table
+All currently implemented commands are listed in the following table. [Here](https://docs.google.com/spreadsheets/d/1rWde3jjrgyzO2fsg2rrVAKxkPa2hy-DDaqlfQTDaNxg/edit?gid=0#gid=0) is a spreadsheet on the commands.
 |COMMAND NAME| PARAMETERS | PARAMETER TYPE | RETURN | RETURN TYPE | DESCRIPTION |
 |-|-|-|-|-|-|
 | `HELP` | N/A | N/A | list of all commands | string | Returns all working commands

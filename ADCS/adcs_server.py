@@ -11,6 +11,7 @@ from tcp_server import TcpListener
 from adcs_subsystem import ADCSSubsystem
 
 SLEEP_TIME = 5  # in seconds
+EXIT_FLAG = b"EXIT"
 
 
 def command_line_handler(argv) -> tuple[int, str]:
@@ -46,7 +47,8 @@ def listen(adcs: ADCSSubsystem, stop: threading.Event):
     while not stop.is_set():
         try:
             received = adcs.read_bytes(timeout=SLEEP_TIME)
-            if not received:
+            print(received)
+            if not received or received.rstrip() == EXIT_FLAG:
                 stop.set()  # begin closing server
                 return
             adcs.rx_buffer.put(received)

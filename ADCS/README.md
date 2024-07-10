@@ -24,6 +24,7 @@ All currently implemented commands are listed in the following table. [Here](htt
 | `STM` | Time | float in s | N/A | N/A | Sets the time currently recorded by the ADCS
 | `GOR` | N/A | N/A | ADCS angles x, y, z | tuple of floats | Returns the current orientation of the ADCS in degrees
 | `RESET` | N/A | N/A | N/A | N/A | Sets the wheel speeds to 0 RPM, and the magnetorquer currents to 0 mA
+| `EXIT` | N/A | N/A | N/A | N/A | Disconnect the client from the server, and closes the server. This is the only command that is not stored with the `adcs_subsystem.py` file
 
 ## Usage
 
@@ -36,7 +37,7 @@ Starting ADCS subsystem on port 8000
 Then in a separate terminal process you can connect to the server on localhost:8000. Note if no host or port is specified the program defaults to localhost:42123
 
 ## Example usage
-Here is an example of connecting to the server sending the `HELP`, `GWS`, and `SWS` command
+Here is an example of connecting to the server sending the `HELP`, `GWS`, and `SWS` command. Exit by sending `^C` from the client side.
 ```
 $ nc localhost 8000
 
@@ -62,6 +63,8 @@ SWS:10.3:-32.4:13.536
 
 GWS
 (10.3, -32.4, 13.536)
+
+EXIT
 ```
 
 ## TODO

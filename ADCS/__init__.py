@@ -1,2 +1,2 @@
-# This file is used for imports
+""" This file is used for imports """
 from adcs_subsystem import ADCSSubsystem

@@ -76,8 +76,9 @@ def handle_input(adcs: ADCSSubsystem, stop: threading.Event):
 
 def handle_output(adcs: ADCSSubsystem, data_list: list):
     """
-    function that will only run when a function thread is spawned.
-    Once spawned, it will run its command and push to tx_buffer.
+    function that will only run when a handle_output_thread is spawned
+    from the input handler. Once spawned, it will run its command and 
+    push to tx_buffer.
     This prevents tasks with short run times from being blocked by
     longer tasks
     """
@@ -110,9 +111,15 @@ def run_command(data: list, adcs: ADCSSubsystem):
     """
     command = data[0]
     try:
-        func = adcs.commands[command]
+        func = adcs.commands[command][0]
+        num_params = adcs.commands[command][1]
+
+        if len(data) != num_params + 1:
+            return f"INVALID COMMAND: command {command} requires {num_params} arguments\n"
+
         if len(data) == 1:  # No args
             return func()
+
         arg_list = data[1:]
         return func(*arg_list)
     except KeyError:

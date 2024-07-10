@@ -1,3 +1,7 @@
+"""
+Stores the enum states of the ADCS
+"""
+
 from enum import Enum
 from enum import auto
 

@@ -38,19 +38,19 @@ class ADCSSubsystem:
         # For full list of commands go here:
         # https://docs.google.com/spreadsheets/d/1rWde3jjrgyzO2fsg2rrVAKxkPa2hy-DDaqlfQTDaNxg/edit?gid=0#gid=0
         self.commands = {
-            "HELP": self.help,
-            "GS": self.get_state,
-            "ON": self.turn_on,
-            "OFF": self.turn_off,
-            "GWS": self.get_wheel_speed,
-            "SWS": self.set_wheel_speed,
-            "SC": self.status_check,
-            "SMC": self.set_magnetorquer_current,
-            "GMC": self.get_magnetorquer_current,
-            "GTM": self.get_time,
-            "STM": self.set_time,
-            "GOR": self.get_orientation,
-            "RESET": self.reset
+            "HELP": (self.help, 0),
+            "GS": (self.get_state, 0),
+            "ON": (self.turn_on, 0),
+            "OFF": (self.turn_off, 0),
+            "GWS": (self.get_wheel_speed, 0),
+            "SWS": (self.set_wheel_speed, 3),
+            "SC": (self.status_check, 0),
+            "SMC": (self.set_magnetorquer_current, 3),
+            "GMC": (self.get_magnetorquer_current, 0),
+            "GTM": (self.get_time, 0),
+            "STM": (self.set_time, 1),
+            "GOR": (self.get_orientation, 0),
+            "RESET": (self.reset, 0),
         }
 
     def __repr__(self):

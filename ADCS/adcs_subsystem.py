@@ -50,7 +50,7 @@ class ADCSSubsystem:
             "GTM": (self.get_time, 0),
             "STM": (self.set_time, 1),
             "GOR": (self.get_orientation, 0),
-            "RESET": (self.reset, 0),
+            "RESET": (self.reset, 0)
         }
 
     def __repr__(self):
@@ -152,4 +152,5 @@ SC | Status Check (string)\n\
 GTM | Get time (float)\n\
 STM:float | Set time\n\
 GOR | Get orientation (tuple)\n\
-RESET | Resets wheels and magnetorquer\n'
+RESET | Resets wheels and magnetorquer\n\
+EXIT | Shuts down the server\n'

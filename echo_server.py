@@ -22,7 +22,8 @@ def echo_server(host, port):
     while True:
         conn, address = s.accept()
         print(f"Connected to {address}")
-        new_thread = threading.Thread(target=handle_client, args=(conn, address))
+        new_thread = threading.Thread(
+            target=handle_client, args=(conn, address))
         new_thread.start()
 
 
@@ -41,7 +42,7 @@ def handle_client(conn, addr: str):
         recv_data = conn.recv(4096)
         if recv_data:
             print(f"{recv_data}")
-            if conn.sendall(recv_data) == None:
+            if conn.sendall(recv_data) is None:
                 continue
         else:
             print(f"Lost connection to {addr}, closing socket.")

@@ -134,6 +134,7 @@ if __name__ == "__main__":
     print(f"Starting ADCS subsystem on port {port}")
 
     server = TcpListener(port, host)
+    server.set_debug(True)
 
     adcs_subsystem = ADCSSubsystem(server)
     adcs_subsystem.init_link()  # opens the server

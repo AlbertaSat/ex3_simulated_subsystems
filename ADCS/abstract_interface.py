@@ -13,9 +13,11 @@ class ConnectionProtocol:
         """
         raise NotImplementedError
 
-    def recv(self) -> bytes:
+    def recv(self, timeout: float) -> bytes:
         """
         This method will recieve data. It should return it.
+        timeout specifies in seconds how long the recv function
+        should block before raising an exception
 
         Fundamental assumption is that this will work with bytes
         """

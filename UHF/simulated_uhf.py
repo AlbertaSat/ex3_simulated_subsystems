@@ -1,3 +1,11 @@
+""" This program simulates the UHF tranceiver
+
+information is sent over servers using TCP sockets and shared data buffers between the two servers.
+information sent to one server will be echoed to the other. 
+
+Copyright 2023 [Drake Boulianne]. Licensed under the Apache License, Version 2.0
+"""
+
 import socket
 import threading
 import time
@@ -193,3 +201,20 @@ def main():
 
 
 main()
+
+
+# pylint: disable=duplicate-code
+# no error
+__author__ = "Drake Boulianne"
+__copyright__ = """
+    Copyright (C) 2023, [Drake Boulianne]
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License."""

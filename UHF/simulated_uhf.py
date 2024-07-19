@@ -56,17 +56,20 @@ def beacon(client, lock):
 
     while True:
         # Send beacon every 5 seconds for testing
-        time.sleep(5)  
+        time.sleep(5)
         with lock:
             try:
                 client.sendall(b"beacon")
                 if DEBUG:
                     print("Sent beacon")
 
-            except Exception as e:
+            except BrokenPipeError as e:
                 print(f"Error sending beacon: {e}")
                 break
 
+            except KeyboardInterrupt as e:
+                print(f"Error sending beacon: {e}")
+                break
 
 def start_server(hostname, port):
     """
@@ -102,9 +105,20 @@ def search_client(server):
         client, addr = server.accept()
         print("Connected to", addr)
         return client
-    except Exception as e: 
+
+    except BrokenPipeError as e:
         server.close()
         print(f"Error occurred: {e}")
+
+    except KeyboardInterrupt as e:
+        server.close()
+        print(f"Error occured {e}")
+
+    except OSError as e:
+        server.close()
+        print(f"Error occurred: {e}")
+
+
 
 
 def send_msg(client, buffer, lock):
@@ -135,9 +149,17 @@ def send_msg(client, buffer, lock):
                         print(f"Sent {message}")
                         print(gs_data)
                         print(comm_data)
-                except Exception as e:
+
+                except BrokenPipeError as e:
                     print(f"Error sending message: {e}")
+                    client.close()
                     break
+
+                except KeyboardInterrupt as e:
+                    print(f"Error sending message: {e}")
+                    client.close()
+                    break
+
 
 
 def receive_msg(client, buffer, lock):
@@ -169,12 +191,26 @@ def receive_msg(client, buffer, lock):
                     break
         except BlockingIOError:
             pass
-        except Exception as e:
+
+        except KeyboardInterrupt as e:
             print(f"Error receiving message: {e}")
+            client.close()
+            break
+
+        except BrokenPipeError as e:
+            print(f"Error receiving message: {e}")
+            client.close()
             break
 
 
 def main():
+    """
+    main function for simulating uhf transceiver.
+    Args:
+        None
+    Returns:
+        None
+    """
 
     comm_server = start_server(COMM_SERVER_HOSTNAME, COMMS_SIDE_SERVER_PORT)
     gs_server = start_server(GS_SERVER_HOSTNAME, GS_SIDE_SERVER_PORT)

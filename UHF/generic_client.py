@@ -5,7 +5,7 @@ hostname is assumed to be local host.
 will listen and print any incoming messages to socket.
 can send messages back to server by simply writing a command in the terminal
 
-Copyright 2023 [Drake Boulianne]. Licensed under the Apache License, Version 2.0
+Copyright 2024 [Drake Boulianne]. Licensed under the Apache License, Version 2.0
 """
 
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 # no error
 __author__ = "Drake Boulianne"
 __copyright__ = """
-    Copyright (C) 2023, [Drake Boulianne]
+    Copyright (C) 2024, [Drake Boulianne]
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at

@@ -118,6 +118,8 @@ def search_client(server):
         server.close()
         print(f"Error occurred: {e}")
 
+    return None
+
 
 
 

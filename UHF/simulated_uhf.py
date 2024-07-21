@@ -23,6 +23,12 @@ gs_data = []
 comm_data = []
 
 
+# pylint: disable=global-statement, invalid-name
+beacon_string = "beacon"
+# Delimtter for command
+DELIMITER = ':'
+
+
 def check_port(port):
     """
     Function to check if port is free for use
@@ -38,9 +44,27 @@ def check_port(port):
         try:
             s.bind(("0.0.0.0", port))
             return True
+
         except OSError:
             return False
 
+def mod_beacon(message, lock):
+    """
+    parses the command and modifies the beacon string (BEACON)
+    Args:
+        msg(string): message sent from comms handler
+    Returns:
+        None
+    """
+    global beacon_string
+
+    try:
+        command = message.decode("utf-8").strip().split(DELIMITER)
+        with lock:
+            beacon_string = command[1]
+
+    except TypeError as e:
+        print(f"Failed to parse: {e}")
 
 def beacon(client, lock):
     """
@@ -59,7 +83,7 @@ def beacon(client, lock):
         time.sleep(5)
         with lock:
             try:
-                client.sendall(b"beacon")
+                client.sendall(bytes(beacon_string, "utf-8"))
                 if DEBUG:
                     print("Sent beacon")
 
@@ -181,13 +205,24 @@ def receive_msg(client, buffer, lock):
         try:
             # Use select to check if data is available to be read
             ready_to_read, _, _ = select.select([client], [], [], 0.5)  # timeout set to 0.5 seconds
+
             if ready_to_read:
                 message = client.recv(BUFF_SIZE)
+
                 if message:
                     if DEBUG:
                         print(f"Received: {message.decode('utf-8')}")
-                    with lock:
-                        buffer.append(message)
+
+                    _, port = client.getsockname()
+
+                    # Primitive check to see if messages intent was to modify UHF params
+                    if port == COMMS_SIDE_SERVER_PORT and b"MOD_UHF" in message:
+                        mod_beacon(message, lock)
+
+                    else:
+                        with lock:
+                            buffer.append(message)
+
                 else:
                     print("Connection closed by the client")
                     break

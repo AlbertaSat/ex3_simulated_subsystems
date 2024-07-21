@@ -22,9 +22,10 @@ GS_SERVER_HOSTNAME = socket.gethostname()
 gs_data = []
 comm_data = []
 
+# Disable global statements and invalid names for beacon_string variable
+# pylint: disable=global-statement
+BEACON_STRING = "beacon"
 
-# pylint: disable=global-statement, invalid-name
-beacon_string = "beacon"
 # Delimtter for command
 DELIMITER = ':'
 
@@ -48,6 +49,7 @@ def check_port(port):
         except OSError:
             return False
 
+
 def mod_beacon(message, lock):
     """
     parses the command and modifies the beacon string (BEACON)
@@ -56,15 +58,17 @@ def mod_beacon(message, lock):
     Returns:
         None
     """
-    global beacon_string
+    # Use of global, valid because no other part of code modifies the beacon_string variable
+    global BEACON_STRING
 
     try:
         command = message.decode("utf-8").strip().split(DELIMITER)
         with lock:
-            beacon_string = command[1]
+            BEACON_STRING = command[1]
 
     except TypeError as e:
         print(f"Failed to parse: {e}")
+
 
 def beacon(client, lock):
     """
@@ -83,17 +87,14 @@ def beacon(client, lock):
         time.sleep(5)
         with lock:
             try:
-                client.sendall(bytes(beacon_string, "utf-8"))
+                client.sendall(bytes(BEACON_STRING, "utf-8"))
                 if DEBUG:
                     print("Sent beacon")
 
-            except BrokenPipeError as e:
+            except (BrokenPipeError, KeyboardInterrupt) as e:
                 print(f"Error sending beacon: {e}")
                 break
 
-            except KeyboardInterrupt as e:
-                print(f"Error sending beacon: {e}")
-                break
 
 def start_server(hostname, port):
     """
@@ -130,21 +131,11 @@ def search_client(server):
         print("Connected to", addr)
         return client
 
-    except BrokenPipeError as e:
-        server.close()
-        print(f"Error occurred: {e}")
-
-    except KeyboardInterrupt as e:
-        server.close()
-        print(f"Error occured {e}")
-
-    except OSError as e:
+    except (BrokenPipeError, KeyboardInterrupt, OSError) as e:
         server.close()
         print(f"Error occurred: {e}")
 
     return None
-
-
 
 
 def send_msg(client, buffer, lock):
@@ -176,16 +167,10 @@ def send_msg(client, buffer, lock):
                         print(gs_data)
                         print(comm_data)
 
-                except BrokenPipeError as e:
+                except (BrokenPipeError, KeyboardInterrupt) as e:
                     print(f"Error sending message: {e}")
                     client.close()
                     break
-
-                except KeyboardInterrupt as e:
-                    print(f"Error sending message: {e}")
-                    client.close()
-                    break
-
 
 
 def receive_msg(client, buffer, lock):
@@ -226,15 +211,11 @@ def receive_msg(client, buffer, lock):
                 else:
                     print("Connection closed by the client")
                     break
+
         except BlockingIOError:
             pass
 
-        except KeyboardInterrupt as e:
-            print(f"Error receiving message: {e}")
-            client.close()
-            break
-
-        except BrokenPipeError as e:
+        except (BrokenPipeError, KeyboardInterrupt) as e:
             print(f"Error receiving message: {e}")
             client.close()
             break

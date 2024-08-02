@@ -305,6 +305,7 @@ def main():
     comm_server.close()
     gs_server.close()
 
+    return 0
 
 main()
 

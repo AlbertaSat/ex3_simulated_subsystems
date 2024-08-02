@@ -297,6 +297,11 @@ def main():
 
     beacon(GS_CLIENT_KEY, gs_server, client_lock)
 
+    comm_listen.join()
+    comm_send.join()
+    gs_listen.join()
+    gs_send.join()
+
     comm_server.close()
     gs_server.close()
 

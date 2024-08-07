@@ -145,7 +145,6 @@ def search_client(server, lock):
         client(socket): client socket object
         
     """
-    print("This ran")
     with lock:
         try:
             client, addr = server.accept()

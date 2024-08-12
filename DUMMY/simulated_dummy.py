@@ -1,11 +1,19 @@
-""" This program is a dummy subsystem used with the dummy subsystem handler for development of OBC FSW 
+"""
+This program is a dummy subsystem used with the dummy subsystem handler for development of OBC FSW
 
-It communicates with the dummy subsystem via TCP, by spawning a TCP server and listening for TCP client conn request from dummy handler.
+It communicates with the dummy subsystem via TCP, by spawning a TCP server and listening for TCP \
+client conn request from dummy handler.
+
+Client commands:
+- EXIT -> command to terminate its connection.
+- QUIT -> command to terminate the server.
+- GET_DUMMY_VAR -> command to get the value of DummyVar.
+- SET_DUMMY_VAR:<VALUE> -> command to set the value of DummyVar to VALUE.
 
 """
 
 import socket
-import time
+import sys
 
 DUMMY_SIM_PORT = 1899
 
@@ -27,9 +35,11 @@ class DummySubsystem:
         }
         self.updatable_parameters = ['']
 
+    # pylint: disable=C0116
     def set_dummy_var(self, new_value):
         self.state['DummyVar'] = new_value
 
+    # pylint: disable=C0116
     def get_dummy_var(self):
         return self.state['DummyVar']
 
@@ -43,13 +53,13 @@ def start_server(hostname, port):
         port(int): port bound to server
 
     Returns:
-        server(socket): server socket object
+        server_socket(socket): server socket object
     """
 
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((hostname, port))
-    server.listen(5)
-    return server
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((hostname, port))
+    server_socket.listen(5)
+    return server_socket
 
 
 def handle_read_data(read_data):
@@ -63,23 +73,22 @@ def handle_read_data(read_data):
         data(string): data received from client
     """
 
-    data = read_data.decode().strip().split(':')
-    command = data[0]
+    decoded_data = read_data.decode().strip().split(':')
+    command = decoded_data[0]
     print("Received command:", command)
     if command == "GET_DUMMY_VAR":
         print("Returning DummyVar:", Dummy.get_dummy_var())
-        return Dummy.get_dummy_var()
-    elif command == "SET_DUMMY_VAR":
-        Dummy.set_dummy_var(data[1])
-        print("DummyVar set to:", data[1])
+        return str(Dummy.get_dummy_var())
+    if command == "SET_DUMMY_VAR":
+        Dummy.set_dummy_var(decoded_data[1])
+        print("DummyVar set to:", decoded_data[1])
         return "OK"
-    elif command == "EXIT":
+    if command == "EXIT":
         return "EXIT"
-    elif command == "QUIT":
+    if command == "QUIT":
         return "QUIT"
-    else:
-        print("Invalid command read: " + command)
-        return "ERR"
+    print("Invalid command read: " + command)
+    return "ERR"
 
 
 if __name__ == "__main__":
@@ -95,12 +104,11 @@ if __name__ == "__main__":
                 data = conn.recv(1024)
                 if not data:
                     break
+                RES = handle_read_data(data)
+                if RES.strip() == "EXIT":
+                    break
+                if RES.strip() == "QUIT":
+                    sys.exit()
                 else:
-                    res = handle_read_data(data)
-                    if res.strip() == "EXIT":
-                        break
-                    elif res.strip() == "QUIT":
-                        quit()
-                    else:
-                        RETURN_DATA = str(res) + "\n"
-                        conn.sendall(RETURN_DATA.encode())
+                    RETURN_DATA = str(RES) + "\n"
+                    conn.sendall(RETURN_DATA.encode())

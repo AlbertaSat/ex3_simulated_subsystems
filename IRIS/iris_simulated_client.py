@@ -30,7 +30,7 @@ import socket
 import sys
 
 DEFAULT_HOST = '127.0.0.1'
-DEFAULT_PORT = 1821
+DEFAULT_PORT = 1806
 MAX_RECEIVE = 1024
 FLAG_HEADER = 'FLAG'
 END_FLAG = "|END" # END_FLAG should have same length as FLAGSIZE

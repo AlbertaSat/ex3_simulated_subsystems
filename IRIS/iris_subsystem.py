@@ -190,9 +190,9 @@ class IRISSubsystem: # pylint: disable=too-many-instance-attributes
         """Simulates fecthing the housekeeping data on the IRIS subsystem.
             Note that due to socket handling tuples must be converted into string pairs
         """
-        current_state = []
+        current_state = ""
         for pair in self.state.items():
-            current_state.append(str(pair[0]) + ": " + str(pair[1]) + " ")
+            current_state = current_state + str(pair[0]) + ": " + str(pair[1]) + "\n"
         return current_state
 
     def num_images(self):

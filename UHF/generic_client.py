@@ -56,7 +56,7 @@ def main():
         print("Usage: python3 generic_client.py <port>")
         return -1
 
-    host = socket.gethostname()
+    host = '127.0.0.1'
     port = int(sys.argv[1])
 
     try:
@@ -84,7 +84,8 @@ def main():
         except KeyboardInterrupt as e:
             print(f"Error receiving data: {e}")
             break
-
+    write_thread.join()
+    client.close()
     return 0
 
 if __name__ == "__main__":

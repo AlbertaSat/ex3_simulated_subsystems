@@ -14,6 +14,9 @@ class Subsystems(Enum):
     """enum of the simulated subsystems."""
 
     ADCS = auto()
+    DFGM = auto()
+    DUMMY = auto()
     EPS = auto()
     IRIS = auto()
-    UHF = auto()
+    UHF_TO_GS = auto()
+    UHF_TO_OBC = auto()

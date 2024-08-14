@@ -42,3 +42,24 @@ def test_obtain_default_ports() -> None:
         assert int(config_dict["port"]) == 61200 + index, f"{subsystem}"
 
     TEST_PATH.unlink()
+
+
+def test_root_defaults() -> None:
+    config_path = definitions.PROJECT_ROOT / "simulated_config.ini"
+    expected = {
+        definitions.Subsystems.ADCS: 1803,
+        definitions.Subsystems.UHF_TO_GS: 1235,
+        definitions.Subsystems.UHF_TO_OBC: 1234,
+        definitions.Subsystems.DFGM: 1802,
+        definitions.Subsystems.IRIS: 1806,
+        definitions.Subsystems.DUMMY: 1807,
+    }
+
+    for subsys, expected_port in expected.items():
+        found_port = get_simulated_config(config_path, subsys)["port"]
+        assert (
+            found_port is not None
+        ), "Expected port for {} to exist, but found None".format(subsys.name)
+        assert (
+            int(found_port) == expected_port
+        ), "Expected to see {}, but got {}".format(expected_port, found_port)

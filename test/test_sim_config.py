@@ -60,7 +60,7 @@ def test_root_defaults() -> None:
         found_port = get_simulated_config(config_path, subsys)["port"]
         assert (
             found_port is not None
-        ), "Expected port for {} to exist, but found None".format(subsys.name)
+        ), "Expected port for {subsys.name} to exist, but found None"
         assert (
             int(found_port) == expected_port
         ), "Expected to see {expected_port}, but got {found_port}"

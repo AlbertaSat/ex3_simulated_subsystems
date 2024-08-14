@@ -63,4 +63,4 @@ def test_root_defaults() -> None:
         ), "Expected port for {} to exist, but found None".format(subsys.name)
         assert (
             int(found_port) == expected_port
-        ), "Expected to see {}, but got {}".format(expected_port, found_port)
+        ), "Expected to see {expected_port}, but got {found_port}"

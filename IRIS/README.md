@@ -37,11 +37,11 @@ IRIS is a system on ExAlta3 which is responsible for capturing and storing image
     
 
 ## Usage
-- The server is run through python PORT is whatever port you wish to use, or leave blank for default port 1821:
+- The server is run through python PORT is whatever port you wish to use, or leave blank for the default port defined in the common obc ports located [here](https://github.com/AlbertaSat/ex3_software/blob/main/ex3_shared_libs/common/src/lib.rs):
 ```python
 python3 ./iris_simulated_server.py PORT
 ```
-- Currently a simple client side is implemented again default port is 1821:
+- Currently a simple client side is implemented:
 ```python
 python3 ./iris_client_server.py PORT
 ```

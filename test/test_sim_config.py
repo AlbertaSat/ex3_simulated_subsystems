@@ -45,6 +45,7 @@ def test_obtain_default_ports() -> None:
 
 
 def test_root_defaults() -> None:
+    """Tests the default value of the config file at the root"""
     config_path = definitions.PROJECT_ROOT / "simulated_config.ini"
     expected = {
         definitions.Subsystems.ADCS: 1803,

@@ -12,6 +12,7 @@ Copyright 2024 [Daniel Sacro]. Licensed under the Apache License, Version 2.0
 """
 
 import socket
+import struct
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1802
@@ -38,18 +39,18 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
         # Housekeeping data
         print("HK Data:")
-        print("\tCore Voltage: " + str(int.from_bytes(data[12:14], "little")))
-        print("\tSensor Temperature: " + str(int.from_bytes(data[14:16], "little")))
-        print("\tReference Temperature: " + str(int.from_bytes(data[16:18], "little")))
-        print("\tBoard Temperature: " + str(int.from_bytes(data[18:20], "little")))
-        print("\tPositive Rail Voltage: " + str(int.from_bytes(data[20:22], "little")))
-        print("\tInput Voltage: " + str(int.from_bytes(data[22:24], "little")))
-        print("\tReference Voltage: " + str(int.from_bytes(data[24:26], "little")))
-        print("\tInput Current: " + str(int.from_bytes(data[26:28], "little")))
-        print("\tReserved 1: " + str(int.from_bytes(data[28:30], "little")))
-        print("\tReserved 2: " + str(int.from_bytes(data[30:32], "little")))
-        print("\tReserved 3: " + str(int.from_bytes(data[32:34], "little")))
-        print("\tReserved 4: " + str(int.from_bytes(data[34:36], "little")))
+        print("\tCore Voltage: " + str(struct.unpack("e", data[12:14])))
+        print("\tSensor Temperature: " + str(struct.unpack("e", data[14:16])))
+        print("\tReference Temperature: " + str(struct.unpack("e", data[16:18])))
+        print("\tBoard Temperature: " + str(struct.unpack("e", data[18:20])))
+        print("\tPositive Rail Voltage: " + str(struct.unpack("e", data[20:22])))
+        print("\tInput Voltage: " + str(struct.unpack("e", data[22:24])))
+        print("\tReference Voltage: " + str(struct.unpack("e", data[24:26])))
+        print("\tInput Current: " + str(struct.unpack("e", data[26:28])))
+        print("\tReserved 1: " + str(struct.unpack("e", data[28:30])))
+        print("\tReserved 2: " + str(struct.unpack("e", data[30:32])))
+        print("\tReserved 3: " + str(struct.unpack("e", data[32:34])))
+        print("\tReserved 4: " + str(struct.unpack("e", data[34:36])))
 
         # DFGM Tuple
         print("Mag Data: ")

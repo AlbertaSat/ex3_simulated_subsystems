@@ -18,7 +18,7 @@ import queue
 import iris_subsystem
 
 DEFAULT_HOST = '127.0.0.1'
-DEFAULT_PORT = 1821
+DEFAULT_PORT = 1806
 MAX_COMMANDSIZE = 128
 END_FLAG = "|END|"
 
@@ -94,10 +94,12 @@ def output_send(conn, reply_buffer):
                         element = element.encode()
                     conn.sendall(header.encode())
                     conn.sendall(element)
+                    logging.info("Sent: %s\n", element)
             else:
                 header = "FLAG:" + str(len(reply)) + ':'
                 conn.sendall(header.encode())
                 conn.sendall(reply.encode())
+                logging.info("Sent: %s\n", reply)
             conn.sendall(END_FLAG.encode())
         except BrokenPipeError:
             logging.info("Connection to client lost: Force closing output loop")

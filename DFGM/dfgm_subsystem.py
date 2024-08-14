@@ -183,7 +183,7 @@ class DFGMSimulator:
                 self.packet_bytes.extend(pack("H", packet_section_value))
             elif packet_section in ["PPS Offset"]:
                 # Force these data packet sections to be in uint32 form
-                self.packet_bytes.extend(pack("L", packet_section_value))
+                self.packet_bytes.extend(pack("I", packet_section_value))
             elif packet_section in ["HK_data"]:
                 # Append previously packed bytes to this array of bytes
                 self.packet_bytes.extend(self.house_keeping_bytes)

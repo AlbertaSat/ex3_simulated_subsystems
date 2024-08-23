@@ -146,63 +146,46 @@ def process_cmd(cmd):
         return ret
 
 
-    if system == 'UHF':
-        match request:
-            case 'GET_MODE':
-                if DEBUG:
-                    print("Getting mode...")
-
-                ret = str(uhf_params['MODE'])
-
-            case 'SET_MODE':
-                if DEBUG:
-                    print(f"set mode to: {val}")
-
-                try:
-                    print("this ran")
-                    uhf_params['MODE'] = int(val)
-                    ret = f"set UHF mode to: {val}"
-
-                except ValueError as e:
-                    print("This should run instead")
-                    print(e)
-                    ret = str(e)
-
-            case 'GET_BEACON':
-                if DEBUG:
-                    print("Getting beacon...")
-
-                ret = {uhf_params['BEACON']}
-
-            case 'SET_BEACON':
-                if DEBUG:
-                    print(f"set mode to: {val}")
-
-                uhf_params['BEACON'] = val
-                ret = f"Set beacon to: {val}"
-
-            case 'GET_BAUD_RATE':
-                if DEBUG:
-                    print("Getting baud rate")
-
-                ret = str(uhf_params['BAUD_RATE'])
-
-            case 'SET_BAUD_RATE':
-                if DEBUG:
-                    print(f"Set baud rate to: {val}")
-
-                try:
-                    uhf_params['BAUD_RATE'] = int(val)
-                    ret = f"Set UHF baud rate to: {val}"
-
-                except ValueError as e:
-                    print(e)
-                    ret = str(e)
-
-            case _:
-                ret = "Bad system request"
-    else:
+    if system != 'UHF':
         ret = "Invalid system type. Please send valid command."
+        return ret
+
+    match request:
+        case 'GET_MODE':
+            ret = str(uhf_params['MODE'])
+
+        case 'SET_MODE':
+            try:
+                print("this ran")
+                uhf_params['MODE'] = int(val)
+                ret = f"set UHF mode to: {val}"
+
+            except ValueError as e:
+                print("This should run instead")
+                print(e)
+                ret = str(e)
+
+        case 'GET_BEACON':
+            ret = {uhf_params['BEACON']}
+
+        case 'SET_BEACON':
+            uhf_params['BEACON'] = val
+            ret = f"Set beacon to: {val}"
+
+        case 'GET_BAUD_RATE':
+            ret = str(uhf_params['BAUD_RATE'])
+
+        case 'SET_BAUD_RATE':
+            try:
+                uhf_params['BAUD_RATE'] = int(val)
+                ret = f"Set UHF baud rate to: {val}"
+
+            except ValueError as e:
+                print(e)
+                ret = str(e)
+
+        case _:
+            ret = "Bad system request"
 
     return ret
 

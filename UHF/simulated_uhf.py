@@ -56,26 +56,6 @@ def check_port(port):
             return False
 
 
-def mod_beacon(message, lock):
-    """
-    parses the command and modifies the beacon string (BEACON)
-    Args:
-        msg(string): message sent from comms handler
-    Returns:
-        None
-    """
-    try:
-        command = message.decode("utf-8").strip().split(DELIMITER)
-        with lock:
-            uhf_params['BEACON'] = command[1]
-
-    except TypeError as e:
-        print(f"Failed to parse: {e}")
-
-    except IndexError as e:
-        print(f"Improper use of Delimiter, Failed to parse: {e}")
-
-
 def beacon(client_key, server, lock, n=5):
     """
     continually sends beacon every n seconds
@@ -144,48 +124,80 @@ def process_cmd(cmd):
     ret = None
     try:
         system, request, val = tuple(cmd.split(":"))
+        if DEBUG:
+            print("Got CMD...")
+            print("System:", system)
+            print("Request:", request)
+            print("Data:", val)
 
     except TypeError as e:
         print(f"Failed to parse: {e}")
-        ret = e
+        ret = str(e)
+        return ret
+
+    except ValueError as e:
+        print(f"Not enough arguments given: {e}")
+        ret = str(e)
+        return ret
 
     except IndexError as e:
         print(f"Improper use of Delimiter, Failed to parse: {e}")
-        ret = e
+        ret = str(e)
+        return ret
+
 
     if system == 'UHF':
         match request:
             case 'GET_MODE':
                 if DEBUG:
                     print("Getting mode...")
-                ret = uhf_params['MODE']
+
+                ret = str(uhf_params['MODE'])
 
             case 'SET_MODE':
                 if DEBUG:
                     print(f"set mode to: {val}")
-                uhf_params['MODE'] = val
-                ret = f"set mode to: {val}"
+
+                try:
+                    print("this ran")
+                    uhf_params['MODE'] = int(val)
+                    ret = f"set UHF mode to: {val}"
+
+                except ValueError as e:
+                    print("This should run instead")
+                    print(e)
+                    ret = str(e)
 
             case 'GET_BEACON':
                 if DEBUG:
                     print("Getting beacon...")
-                ret = uhf_params['BEACON']
+
+                ret = {uhf_params['BEACON']}
 
             case 'SET_BEACON':
                 if DEBUG:
                     print(f"set mode to: {val}")
+
                 uhf_params['BEACON'] = val
                 ret = f"Set beacon to: {val}"
 
             case 'GET_BAUD_RATE':
                 if DEBUG:
                     print("Getting baud rate")
-                ret = uhf_params['BAUD_RATE']
+
+                ret = str(uhf_params['BAUD_RATE'])
 
             case 'SET_BAUD_RATE':
                 if DEBUG:
                     print(f"Set baud rate to: {val}")
-                ret = f"Set baud rate to: {val}"
+
+                try:
+                    uhf_params['BAUD_RATE'] = int(val)
+                    ret = f"Set UHF baud rate to: {val}"
+
+                except ValueError as e:
+                    print(e)
+                    ret = str(e)
 
             case _:
                 ret = "Bad system request"
@@ -290,9 +302,11 @@ def receive_msg(client_key, server, buffer, lock):
 
                     # Primitive check to see if messages intent was to modify UHF params
                     if port == COMMS_SIDE_SERVER_PORT and b"UHF:" in message:
-                        data = process_cmd(message)
+                        data = process_cmd(message.decode('utf-8'))
                         with lock:
-                            buffer.append(data)
+                            if DEBUG:
+                                print(f"Data: {data}, Type: {type(data)}")
+                            comm_data.append(bytes(data, "utf-8"))
                     else:
                         with lock:
                             buffer.append(message)

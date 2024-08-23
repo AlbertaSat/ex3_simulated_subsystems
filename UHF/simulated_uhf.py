@@ -29,9 +29,8 @@ client_pointer = {}
 GS_CLIENT_KEY = "gs_client"
 COMM_CLIENT_KEY = "comm_client"
 
-# Disable global statements and invalid names for beacon_string variable
-# pylint: disable=global-statement
-BEACON_STRING = "beacon"
+# dictionary for simulated uhf params
+uhf_params = {'BAUD_RATE': 9600, 'BEACON':'beacon', 'MODE': 0}
 
 # Delimiter for command
 DELIMITER = ':'
@@ -65,19 +64,16 @@ def mod_beacon(message, lock):
     Returns:
         None
     """
-    # Use of global, valid because no other part of code modifies the beacon_string variable
-    global BEACON_STRING
-
     try:
         command = message.decode("utf-8").strip().split(DELIMITER)
         with lock:
-            BEACON_STRING = command[1]
+            uhf_params['BEACON'] = command[1]
 
     except TypeError as e:
         print(f"Failed to parse: {e}")
 
     except IndexError as e:
-        print(f"Improper us of Delimiter, Failed to parse: {e}")
+        print(f"Improper use of Delimiter, Failed to parse: {e}")
 
 
 def beacon(client_key, server, lock, n=5):
@@ -98,7 +94,7 @@ def beacon(client_key, server, lock, n=5):
         time.sleep(n)
         with lock:
             try:
-                client_pointer[client_key].sendall(bytes(BEACON_STRING, "utf-8"))
+                client_pointer[client_key].sendall(bytes(uhf_params['BEACON'], "utf-8"))
                 if DEBUG:
                     print("Sent beacon")
 
@@ -132,6 +128,71 @@ def start_server(hostname, port):
     server.bind((hostname, port))
     server.listen(5)
     return server
+
+def process_cmd(cmd):
+    """
+    This function processes a command and returns the neccessary data.
+    
+    Args: 
+        msg(string): msg sent from comms handler side client. 
+        command type and content are delimited by commas
+
+    Returns:
+        ret(string): data string to be appended to comm data buffer
+    """
+    # declare variable to hold data being sent to comm data bufffer
+    ret = None
+    try:
+        system, request, val = tuple(cmd.split(":"))
+
+    except TypeError as e:
+        print(f"Failed to parse: {e}")
+        ret = e
+
+    except IndexError as e:
+        print(f"Improper use of Delimiter, Failed to parse: {e}")
+        ret = e
+
+    if system == 'UHF':
+        match request:
+            case 'GET_MODE':
+                if DEBUG:
+                    print("Getting mode...")
+                ret = uhf_params['MODE']
+
+            case 'SET_MODE':
+                if DEBUG:
+                    print(f"set mode to: {val}")
+                uhf_params['MODE'] = val
+                ret = f"set mode to: {val}"
+
+            case 'GET_BEACON':
+                if DEBUG:
+                    print("Getting beacon...")
+                ret = uhf_params['BEACON']
+
+            case 'SET_BEACON':
+                if DEBUG:
+                    print(f"set mode to: {val}")
+                uhf_params['BEACON'] = val
+                ret = f"Set beacon to: {val}"
+
+            case 'GET_BAUD_RATE':
+                if DEBUG:
+                    print("Getting baud rate")
+                ret = uhf_params['BAUD_RATE']
+
+            case 'SET_BAUD_RATE':
+                if DEBUG:
+                    print(f"Set baud rate to: {val}")
+                ret = f"Set baud rate to: {val}"
+
+            case _:
+                ret = "Bad system request"
+    else:
+        ret = "Invalid system type. Please send valid command."
+
+    return ret
 
 
 def search_client(server, lock):
@@ -228,9 +289,10 @@ def receive_msg(client_key, server, buffer, lock):
                     _, port = client_pointer[client_key].getsockname()
 
                     # Primitive check to see if messages intent was to modify UHF params
-                    if port == COMMS_SIDE_SERVER_PORT and b"MOD_UHF" in message:
-                        mod_beacon(message, lock)
-
+                    if port == COMMS_SIDE_SERVER_PORT and b"UHF:" in message:
+                        data = process_cmd(message)
+                        with lock:
+                            buffer.append(data)
                     else:
                         with lock:
                             buffer.append(message)

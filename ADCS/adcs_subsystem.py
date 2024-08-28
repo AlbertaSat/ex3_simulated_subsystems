@@ -111,13 +111,13 @@ class ADCSSubsystem:  # pylint: disable=too-many-instance-attributes
 
     def set_magnetorquer_current(self, current_x, current_y, current_z):
         """Sets the magnetorquer current in mA"""
-        self.wheel_speed.x = float(current_x)
-        self.wheel_speed.y = float(current_y)
-        self.wheel_speed.z = float(current_z)
+        self.magnetic_current.x = float(current_x)
+        self.magnetic_current.y = float(current_y)
+        self.magnetic_current.z = float(current_z)
 
     def get_magnetorquer_current(self) -> tuple[float, float, float]:
         """Gets the wheel speeds in RPM"""
-        return (self.wheel_speed.x, self.wheel_speed.y, self.wheel_speed.z)
+        return (self.magnetic_current.x, self.magnetic_current.y, self.magnetic_current.z)
 
     def set_current(self, currents_x, currents_y, currents_z):
         """Sets the magnetorquer currents in mA"""

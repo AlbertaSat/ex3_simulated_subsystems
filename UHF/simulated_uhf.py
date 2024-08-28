@@ -13,8 +13,8 @@ import select
 
 DEBUG = 1
 BUFF_SIZE = 128
-COMMS_SIDE_SERVER_PORT = 1234
-GS_SIDE_SERVER_PORT = 1235
+COMMS_SIDE_SERVER_PORT = 1805
+GS_SIDE_SERVER_PORT = 1808
 COMM_SERVER_HOSTNAME = '127.0.0.1'
 GS_SERVER_HOSTNAME = '127.0.0.1'
 
@@ -29,9 +29,8 @@ client_pointer = {}
 GS_CLIENT_KEY = "gs_client"
 COMM_CLIENT_KEY = "comm_client"
 
-# Disable global statements and invalid names for beacon_string variable
-# pylint: disable=global-statement
-BEACON_STRING = "beacon"
+# dictionary for simulated uhf params
+uhf_params = {'BAUD_RATE': 9600, 'BEACON':'beacon', 'MODE': 0}
 
 # Delimiter for command
 DELIMITER = ':'
@@ -57,29 +56,6 @@ def check_port(port):
             return False
 
 
-def mod_beacon(message, lock):
-    """
-    parses the command and modifies the beacon string (BEACON)
-    Args:
-        msg(string): message sent from comms handler
-    Returns:
-        None
-    """
-    # Use of global, valid because no other part of code modifies the beacon_string variable
-    global BEACON_STRING
-
-    try:
-        command = message.decode("utf-8").strip().split(DELIMITER)
-        with lock:
-            BEACON_STRING = command[1]
-
-    except TypeError as e:
-        print(f"Failed to parse: {e}")
-
-    except IndexError as e:
-        print(f"Improper us of Delimiter, Failed to parse: {e}")
-
-
 def beacon(client_key, server, lock, n=5):
     """
     continually sends beacon every n seconds
@@ -98,7 +74,7 @@ def beacon(client_key, server, lock, n=5):
         time.sleep(n)
         with lock:
             try:
-                client_pointer[client_key].sendall(bytes(BEACON_STRING, "utf-8"))
+                client_pointer[client_key].sendall(bytes(uhf_params['BEACON'], "utf-8"))
                 if DEBUG:
                     print("Sent beacon")
 
@@ -132,6 +108,86 @@ def start_server(hostname, port):
     server.bind((hostname, port))
     server.listen(5)
     return server
+
+def process_cmd(cmd):
+    """
+    This function processes a command and returns the neccessary data.
+    
+    Args: 
+        msg(string): msg sent from comms handler side client. 
+        command type and content are delimited by commas
+
+    Returns:
+        ret(string): data string to be appended to comm data buffer
+    """
+    # declare variable to hold data being sent to comm data bufffer
+    ret = None
+    try:
+        system, request, val = tuple(cmd.split(":"))
+        if DEBUG:
+            print("Got CMD...")
+            print("System:", system)
+            print("Request:", request)
+            print("Data:", val)
+
+    except TypeError as e:
+        print(f"Failed to parse: {e}")
+        ret = str(e)
+        return ret
+
+    except ValueError as e:
+        print(f"Not enough arguments given: {e}")
+        ret = str(e)
+        return ret
+
+    except IndexError as e:
+        print(f"Improper use of Delimiter, Failed to parse: {e}")
+        ret = str(e)
+        return ret
+
+
+    if system != 'UHF':
+        ret = "Invalid system type. Please send valid command."
+        return ret
+
+    match request:
+        case 'GET_MODE':
+            ret = str(uhf_params['MODE'])
+
+        case 'SET_MODE':
+            try:
+                print("this ran")
+                uhf_params['MODE'] = int(val)
+                ret = f"set UHF mode to: {val}"
+
+            except ValueError as e:
+                print("This should run instead")
+                print(e)
+                ret = str(e)
+
+        case 'GET_BEACON':
+            ret = {uhf_params['BEACON']}
+
+        case 'SET_BEACON':
+            uhf_params['BEACON'] = val
+            ret = f"Set beacon to: {val}"
+
+        case 'GET_BAUD_RATE':
+            ret = str(uhf_params['BAUD_RATE'])
+
+        case 'SET_BAUD_RATE':
+            try:
+                uhf_params['BAUD_RATE'] = int(val)
+                ret = f"Set UHF baud rate to: {val}"
+
+            except ValueError as e:
+                print(e)
+                ret = str(e)
+
+        case _:
+            ret = "Bad system request"
+
+    return ret
 
 
 def search_client(server, lock):
@@ -228,9 +284,12 @@ def receive_msg(client_key, server, buffer, lock):
                     _, port = client_pointer[client_key].getsockname()
 
                     # Primitive check to see if messages intent was to modify UHF params
-                    if port == COMMS_SIDE_SERVER_PORT and b"MOD_UHF" in message:
-                        mod_beacon(message, lock)
-
+                    if port == COMMS_SIDE_SERVER_PORT and b"UHF:" in message:
+                        data = process_cmd(message.decode('utf-8'))
+                        with lock:
+                            if DEBUG:
+                                print(f"Data: {data}, Type: {type(data)}")
+                            comm_data.append(bytes(data, "utf-8"))
                     else:
                         with lock:
                             buffer.append(message)

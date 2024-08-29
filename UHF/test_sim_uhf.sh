@@ -19,5 +19,5 @@ gnome-terminal --title="SIM_UHF" -- bash -c "echo 'Starting simulated UHF'; slee
 gnome-terminal --title="COMS_HANDLER" -- bash -c "echo 'Starting simulated coms handler'; sleep 0.5; python3 generic_client.py 1805; exec bash"
 
 # Spawn terminal for fake gs
-gnome-terminal --title="GS" -- bash -c "echo 'Starting simulated gs'; sleep 0.5; python3 generic_client.py 1235; exec bash"
+gnome-terminal --title="GS" -- bash -c "echo 'Starting simulated gs'; sleep 0.5; python3 generic_client.py 1808; exec bash"
 

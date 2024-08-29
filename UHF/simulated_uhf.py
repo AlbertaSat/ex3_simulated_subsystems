@@ -156,17 +156,15 @@ def process_cmd(cmd):
 
         case 'SET_MODE':
             try:
-                print("this ran")
                 uhf_params['MODE'] = int(val)
                 ret = f"set UHF mode to: {val}"
 
             except ValueError as e:
-                print("This should run instead")
                 print(e)
                 ret = str(e)
 
         case 'GET_BEACON':
-            ret = {uhf_params['BEACON']}
+            ret = uhf_params['BEACON']
 
         case 'SET_BEACON':
             uhf_params['BEACON'] = val

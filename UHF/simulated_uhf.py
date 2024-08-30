@@ -10,11 +10,13 @@ import socket
 import threading
 import time
 import select
+# import struct
 
 DEBUG = 1
-BUFF_SIZE = 128
+BUFF_SIZE = 4096  # This might be wrong
 COMMS_SIDE_SERVER_PORT = 1805
 GS_SIDE_SERVER_PORT = 1808
+BEACON_RATE = 10 # Set beacon to be sent every 10 seconds
 COMM_SERVER_HOSTNAME = '127.0.0.1'
 GS_SERVER_HOSTNAME = '127.0.0.1'
 
@@ -24,6 +26,8 @@ comm_data = []
 
 # Using mutable type as a makeshift pointer so clients can be modified across threads
 client_pointer = {}
+# Set the last time a message was sent to be the current time.
+beacon_timer = {"last_send":time.time()}
 
 # client keys
 GS_CLIENT_KEY = "gs_client"
@@ -56,28 +60,27 @@ def check_port(port):
             return False
 
 
-def beacon(client_key, server, lock, n=5):
+def beacon(client_key, server, lock):
     """
-    continually sends beacon every n seconds
+    continually sends beacon every after the BEACON_RATE in seconds passes
 
     Args:
         client_key(string): key to access the dictionary where client socket object 
         is stored (client_pointer)
         lock(mutex): the lock used when interacting with client socket
-        n(integer): the amount of time in seconds between beacon messages
-            defult value of 5.
     Returns:
         None
     """
 
     while True:
-        time.sleep(n)
+        current_time = time.time()
         with lock:
             try:
-                client_pointer[client_key].sendall(bytes(uhf_params['BEACON'], "utf-8"))
-                if DEBUG:
-                    print("Sent beacon")
-
+                if current_time - beacon_timer["last_send"] > BEACON_RATE:
+                    client_pointer[client_key].sendall(bytes(uhf_params['BEACON'], "utf-8"))
+                    if DEBUG:
+                        print("Sent beacon")
+                    beacon_timer["last_send"] = current_time
             except BrokenPipeError as e:
                 print(f"Error sending beacon: {e}")
                 print("waiting for client to connect")
@@ -238,11 +241,17 @@ def send_msg(client_key, buffer, lock):
                     message = buffer.pop(0)
                     client_pointer[client_key].sendall(message)
 
+                    _, port = client_pointer[client_key].getsockname()
+
+                    # Reset beacon timer if message is sent to GS
+                    if port == GS_SIDE_SERVER_PORT:
+                        beacon_timer["last_send"] = time.time()
                     if DEBUG:
                         print("***** AFTER *****")
                         print(f"Sent {message}")
                         print(buffer)
                         print("******************")
+
 
 
         except KeyboardInterrupt as e:
@@ -274,11 +283,7 @@ def receive_msg(client_key, server, buffer, lock):
 
             if ready_to_read:
                 message = client_pointer[client_key].recv(BUFF_SIZE)
-
                 if message:
-                    if DEBUG:
-                        print(f"Received: {message.decode('utf-8')}")
-
                     _, port = client_pointer[client_key].getsockname()
 
                     # Primitive check to see if messages intent was to modify UHF params

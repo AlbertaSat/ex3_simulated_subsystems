@@ -13,7 +13,7 @@ import select
 # import struct
 
 DEBUG = 1
-BUFF_SIZE = 4096  # This might be wrong
+BUFF_SIZE = 4096
 COMMS_SIDE_SERVER_PORT = 1805
 GS_SIDE_SERVER_PORT = 1808
 BEACON_RATE = 10 # Set beacon to be sent every 10 seconds

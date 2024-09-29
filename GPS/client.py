@@ -27,11 +27,11 @@ with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
         command = commandstr.encode('utf-8')
         s.send(command)
 
-        if commandstr == 'terminate' or  commandstr == "disconnect":
+        if commandstr == ('terminate' or "disconnect"):
             break
         data=s.recv(1024)
         print(data.decode('utf-8'))
         commandstr=input("possible commands: latlong, time, returnstate, ping\n")
-        
+
 print("Client disconnected.")
-exit(0)
+sys.exit(0)

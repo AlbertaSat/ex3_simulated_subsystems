@@ -23,11 +23,6 @@ if os.path.exists(path):
 
 with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
     s.bind(path)
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> cce6b0273e38e72cc4d15505d5ad85ab689d5948
     while True:
         print(f"Starting server on {path}\nWaiting for client.")
         s.listen()
@@ -37,22 +32,14 @@ with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
             while True:
                 command=conn.recv(1024) #buffsize 1024 bytes
                 command=command.decode("utf-8")
-<<<<<<< HEAD
                 data=0
-=======
-                data=0      
->>>>>>> cce6b0273e38e72cc4d15505d5ad85ab689d5948
                 if command == "time":
                     data=b"[Server] 12:45 am Friday August 23 2024"
                 elif command == "latlong":
                     data=b"[Server] 53.518291, -113.536530)"
                 elif command == "returnstate":
                     data=b"return state on"
-<<<<<<< HEAD
                 elif command == "ping":
-=======
-                elif command == "ping": 
->>>>>>> cce6b0273e38e72cc4d15505d5ad85ab689d5948
                     data=b"[Server] ping successful"
                 elif command == "terminate":
                     print("Closing connection.")

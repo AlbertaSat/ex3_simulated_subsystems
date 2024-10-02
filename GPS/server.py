@@ -58,34 +58,17 @@ with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
                     print("Closing connection.")
                     os.remove(path)
                     print("Server socket file removed.")
-<<<<<<< HEAD
                     sys.exit(0)
                 elif command == "disconnect":
                     print(f"Command recieved: {command}.")
                     print("Client disconnected.")
-=======
-                    exit(0)
-                elif command == "disconnect":
-                    print(f"Command recieved: {command}.")  
-                    print("Client disconnected.")      
->>>>>>> cce6b0273e38e72cc4d15505d5ad85ab689d5948
                     break
                 else:
                     command="invalid command"
                     data=b"[Server] Invalid command."
-<<<<<<< HEAD
 
                 print(f"Command recieved: {command}.")
                 conn.send(data)
 
     os.remove(path)
     print("Server socket file removed.")
-=======
-                
-                print(f"Command recieved: {command}.")        
-                conn.send(data)
-
-            
-    os.remove(path)
-    print("Server socket file removed.")
->>>>>>> cce6b0273e38e72cc4d15505d5ad85ab689d5948

@@ -23,21 +23,24 @@ import sys
 PATH="/tmp/server.sock"
 
 def connect() -> None:
+    """
+    Connects to server and allows for communication.
+    """
     with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
         s.connect(PATH)
         print("Client connected.")
 
         while True:
-            commandstr=input("Possible commands: latlong, time, returnstate, ping, disconnect, terminate\n>>>")
+            print("Possible commands: latlong, time, returnstate, ping, disconnect, terminate")
+            commandstr=input(">>>")
             command = commandstr.encode('utf-8')
             s.send(command)
 
-            if commandstr == 'terminate' or commandstr == 'disconnect':
+            if commandstr in ("terminate", "disconnect"):
                 print("Disconnecting")
                 break
             data=s.recv(1024)
             print(data.decode('utf-8'))
-            #commandstr=input("possible commands: latlong, time, returnstate, ping, disconnect, terminate\n")
 
     print("Client disconnected.")
     sys.exit(0)

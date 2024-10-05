@@ -20,6 +20,9 @@ import sys
 PATH="/tmp/server.sock"
 
 def open_server() -> None:
+    """
+    Opens a listening server
+    """
     with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
         s.bind(PATH)
         print(f"Starting server on {PATH}\n")
@@ -57,7 +60,6 @@ def open_server() -> None:
                         command="invalid command"
                         data=b"[Server] Invalid command."
                     conn.send(data)
-
         os.remove(PATH)
         print("Server socket file removed.")
 

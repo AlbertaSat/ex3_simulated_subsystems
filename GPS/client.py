@@ -10,28 +10,37 @@ At the moment, the three commands are:
     - latlong       - Request the latitude and longitude information
     - returnstate   - Request the return state (on/off)
     - ping          - Ping the server
-    - null string   - closes connection
+    - disconnect    - closes connection to server
+    - terminate     - terminates the server and closes connection
+
     
 To test the server/client you must run both files in WSL to ensure the use of a 
 UNIX environment. Afterwards you may enter any of the valid commands from the client.
 """
 import socket
-path="/tmp/server.sock"
+import sys
 
-with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
-    s.connect(path)
-    print("Client connected.")
+PATH="/tmp/server.sock"
 
-    commandstr=input("Possible commands: latlong, time, returnstate, ping\n")
-    while True:
-        command = commandstr.encode('utf-8')
-        s.send(command)
+def connect() -> None:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
+        s.connect(PATH)
+        print("Client connected.")
 
-        if commandstr == ('terminate' or "disconnect"):
-            break
-        data=s.recv(1024)
-        print(data.decode('utf-8'))
-        commandstr=input("possible commands: latlong, time, returnstate, ping\n")
+        while True:
+            commandstr=input("Possible commands: latlong, time, returnstate, ping, disconnect, terminate\n>>>")
+            command = commandstr.encode('utf-8')
+            s.send(command)
 
-print("Client disconnected.")
-sys.exit(0)
+            if commandstr == 'terminate' or commandstr == 'disconnect':
+                print("Disconnecting")
+                break
+            data=s.recv(1024)
+            print(data.decode('utf-8'))
+            #commandstr=input("possible commands: latlong, time, returnstate, ping, disconnect, terminate\n")
+
+    print("Client disconnected.")
+    sys.exit(0)
+
+if __name__ == "__main__":
+    connect()

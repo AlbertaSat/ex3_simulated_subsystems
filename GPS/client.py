@@ -14,8 +14,8 @@ At the moment, the three commands are:
     - terminate     - terminates the server and closes connection
 
     
-To test the server/client you must run both files in WSL to ensure the use of a 
-UNIX environment. Afterwards you may enter any of the valid commands from the client.
+To test the server/client you must run both files in a UNIX environment.
+Afterwards you may enter any of the valid commands from the client.
 """
 import socket
 import sys

@@ -41,11 +41,11 @@ uhf_params = {'BAUD_RATE': 9600, 'BEACON':'beacon', 'MODE': 0}
 DELIMITER = ':'
 
 # Beacon Header constants
-msg_type = 0x03 # no msg type for beacon, give it value 3 for now
-msg_id = 0x00
-dest_id = 0x07 # ground station destination id (7)
-source_id = 0x0B
-opcode = 0x00 # dummy opcode
+MSG_TYPE = 0x03 # no msg type for beacon, give it value 3 for now
+MSG_ID = 0x00
+DEST_ID = 0x07 # ground station destination id (7)
+SOURCE_ID = 0x0B
+OPCODE = 0x00 # dummy opcode
 
 
 def check_port(port):
@@ -83,7 +83,7 @@ def beacon(client_key, server, lock):
             try:
                 if current_time - beacon_timer["last_send"] > BEACON_RATE:
                     # 5 bytes for rest of header and 2 more for the length itself
-                    msg_len = len(uhf_params['BEACON']) + 5 + 2  
+                    msg_len = len(uhf_params['BEACON']) + 5 + 2
                     msg_len_bytes = msg_len.to_bytes(2, "little")
                     beacon_content = bytes(uhf_params['BEACON'], "utf-8")
                     header_bytes = bytes([msg_type, msg_id, dest_id, source_id, opcode])

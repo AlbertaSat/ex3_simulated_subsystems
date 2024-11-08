@@ -86,7 +86,7 @@ def beacon(client_key, server, lock):
                     msg_len = len(uhf_params['BEACON']) + 5 + 2
                     msg_len_bytes = msg_len.to_bytes(2, "little")
                     beacon_content = bytes(uhf_params['BEACON'], "utf-8")
-                    header_bytes = bytes([msg_type, msg_id, dest_id, source_id, opcode])
+                    header_bytes = bytes([MSG_TYPE, MSG_ID, DEST_ID, SOURCE_ID, OPCODE])
                     beacon_msg = header_bytes + msg_len_bytes + beacon_content
                     client_pointer[client_key].sendall(beacon_msg)
                     if DEBUG:

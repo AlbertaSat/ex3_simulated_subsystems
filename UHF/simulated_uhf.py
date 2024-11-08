@@ -13,7 +13,7 @@ import select
 # import struct
 
 DEBUG = 1
-BUFF_SIZE = 4096
+BUFF_SIZE = 128
 COMMS_SIDE_SERVER_PORT = 1805
 GS_SIDE_SERVER_PORT = 1808
 BEACON_RATE = 10 # Set beacon to be sent every 10 seconds
@@ -26,6 +26,7 @@ comm_data = []
 
 # Using mutable type as a makeshift pointer so clients can be modified across threads
 client_pointer = {}
+
 # Set the last time a message was sent to be the current time.
 beacon_timer = {"last_send":time.time()}
 
@@ -38,6 +39,13 @@ uhf_params = {'BAUD_RATE': 9600, 'BEACON':'beacon', 'MODE': 0}
 
 # Delimiter for command
 DELIMITER = ':'
+
+# Beacon Header constants
+msg_type = 0x03 # no msg type for beacon, give it value 3 for now
+msg_id = 0x00
+dest_id = 0x07 # ground station destination id (7)
+source_id = 0x0B
+opcode = 0x00 # dummy opcode
 
 
 def check_port(port):
@@ -61,10 +69,7 @@ def check_port(port):
 
 
 def beacon(client_key, server, lock):
-    """
-    continually sends beacon every after the BEACON_RATE in seconds passes
-
-    Args:
+    """ continually sends beacon every after the BEACON_RATE in seconds passes Args:
         client_key(string): key to access the dictionary where client socket object 
         is stored (client_pointer)
         lock(mutex): the lock used when interacting with client socket
@@ -77,7 +82,13 @@ def beacon(client_key, server, lock):
         with lock:
             try:
                 if current_time - beacon_timer["last_send"] > BEACON_RATE:
-                    client_pointer[client_key].sendall(bytes(uhf_params['BEACON'], "utf-8"))
+                    # 5 bytes for rest of header and 2 more for the length itself
+                    msg_len = len(uhf_params['BEACON']) + 5 + 2  
+                    msg_len_bytes = msg_len.to_bytes(2, "little")
+                    beacon_content = bytes(uhf_params['BEACON'], "utf-8")
+                    header_bytes = bytes([msg_type, msg_id, dest_id, source_id, opcode])
+                    beacon_msg = header_bytes + msg_len_bytes + beacon_content
+                    client_pointer[client_key].sendall(beacon_msg)
                     if DEBUG:
                         print("Sent beacon")
                     beacon_timer["last_send"] = current_time

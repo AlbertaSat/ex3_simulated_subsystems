@@ -10,12 +10,12 @@ import socket
 import threading
 import time
 import select
-# import struct
 
 DEBUG = 1
 BUFF_SIZE = 4096
-COMMS_SIDE_SERVER_PORT = 1805
-GS_SIDE_SERVER_PORT = 1808
+SIM_ENDUROSAT_UART_PORT = 1805
+GS_BEACON_PORT = 1809
+SIM_ESAT_UHF_PORT = 1808
 BEACON_RATE = 10 # Set beacon to be sent every 10 seconds
 COMM_SERVER_HOSTNAME = '127.0.0.1'
 GS_SERVER_HOSTNAME = '127.0.0.1'
@@ -26,6 +26,7 @@ comm_data = []
 
 # Using mutable type as a makeshift pointer so clients can be modified across threads
 client_pointer = {}
+
 # Set the last time a message was sent to be the current time.
 beacon_timer = {"last_send":time.time()}
 
@@ -38,6 +39,13 @@ uhf_params = {'BAUD_RATE': 9600, 'BEACON':'beacon', 'MODE': 0}
 
 # Delimiter for command
 DELIMITER = ':'
+
+# Beacon Header constants
+MSG_TYPE = 0x03 # no msg type for beacon, give it value 3 for now
+MSG_ID = 0x00
+DEST_ID = 0x07 # ground station destination id (7)
+SOURCE_ID = 0x0B
+OPCODE = 0x00 # dummy opcode
 
 
 def check_port(port):
@@ -61,10 +69,7 @@ def check_port(port):
 
 
 def beacon(client_key, server, lock):
-    """
-    continually sends beacon every after the BEACON_RATE in seconds passes
-
-    Args:
+    """ continually sends beacon every after the BEACON_RATE in seconds passes Args:
         client_key(string): key to access the dictionary where client socket object 
         is stored (client_pointer)
         lock(mutex): the lock used when interacting with client socket
@@ -77,7 +82,13 @@ def beacon(client_key, server, lock):
         with lock:
             try:
                 if current_time - beacon_timer["last_send"] > BEACON_RATE:
-                    client_pointer[client_key].sendall(bytes(uhf_params['BEACON'], "utf-8"))
+                    # 5 bytes for rest of header and 2 more for the length itself
+                    msg_len = len(uhf_params['BEACON']) + 5 + 2
+                    msg_len_bytes = msg_len.to_bytes(2, "little")
+                    beacon_content = bytes(uhf_params['BEACON'], "utf-8")
+                    header_bytes = bytes([MSG_TYPE, MSG_ID, DEST_ID, SOURCE_ID, OPCODE])
+                    beacon_msg = header_bytes + msg_len_bytes + beacon_content
+                    client_pointer[client_key].sendall(beacon_msg)
                     if DEBUG:
                         print("Sent beacon")
                     beacon_timer["last_send"] = current_time
@@ -244,7 +255,7 @@ def send_msg(client_key, buffer, lock):
                     _, port = client_pointer[client_key].getsockname()
 
                     # Reset beacon timer if message is sent to GS
-                    if port == GS_SIDE_SERVER_PORT:
+                    if port == SIM_ESAT_UHF_PORT:
                         beacon_timer["last_send"] = time.time()
                     if DEBUG:
                         print("***** AFTER *****")
@@ -287,7 +298,7 @@ def receive_msg(client_key, server, buffer, lock):
                     _, port = client_pointer[client_key].getsockname()
 
                     # Primitive check to see if messages intent was to modify UHF params
-                    if port == COMMS_SIDE_SERVER_PORT and b"UHF:" in message:
+                    if port == SIM_ENDUROSAT_UART_PORT and b"UHF:" in message:
                         data = process_cmd(message.decode('utf-8'))
                         with lock:
                             if DEBUG:
@@ -325,8 +336,8 @@ def main():
         None
     """
 
-    comm_server = start_server(COMM_SERVER_HOSTNAME, COMMS_SIDE_SERVER_PORT)
-    gs_server = start_server(GS_SERVER_HOSTNAME, GS_SIDE_SERVER_PORT)
+    comm_server = start_server(COMM_SERVER_HOSTNAME, SIM_ENDUROSAT_UART_PORT)
+    gs_server = start_server(GS_SERVER_HOSTNAME, SIM_ESAT_UHF_PORT)
 
     client_lock = threading.Lock()
 

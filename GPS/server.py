@@ -17,7 +17,7 @@ import os
 import socket
 import sys
 
-PATH="/tmp/server.sock"
+PATH="/tmp/fifo_socket_"
 
 def open_server() -> None:
     """

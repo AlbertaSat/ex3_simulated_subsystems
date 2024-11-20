@@ -13,12 +13,13 @@ import select
 
 DEBUG = 1
 BUFF_SIZE = 4096
-SIM_ENDUROSAT_UART_PORT = 1805
-GS_BEACON_PORT = 1809
+SIM_ESAT_UART_PORT = 1805
 SIM_ESAT_UHF_PORT = 1808
+SIM_ESAT_BEACON_PORT = 1809
 BEACON_RATE = 10 # Set beacon to be sent every 10 seconds
-COMM_SERVER_HOSTNAME = '127.0.0.1'
-GS_SERVER_HOSTNAME = '127.0.0.1'
+ESAT_UART_SERVER_HOSTNAME = '127.0.0.1'
+ESAT_UHF_SERVER_HOSTNAME = '127.0.0.1'
+ESAT_BEACON_SERVER_HOSTNAME = '127.0.0.1'
 
 # Use lists for shared buffers to allow modification within threads
 gs_data = []
@@ -31,22 +32,18 @@ client_pointer = {}
 beacon_timer = {"last_send":time.time()}
 
 # client keys
-GS_CLIENT_KEY = "gs_client"
-COMM_CLIENT_KEY = "comm_client"
+GS_CLIENT_KEY = "esat_uhf_client"
+GS_BEACON_CLIENT_KEY = "esat_beacon_client"
+ESAT_UART_CLIENT_KEY = "esat_uart_client"
+
 
 # dictionary for simulated uhf params
 uhf_params = {'BAUD_RATE': 9600, 'BEACON':'beacon', 'MODE': 0}
 
 # Delimiter for command
 DELIMITER = ':'
-
-# Beacon Header constants
-MSG_TYPE = 0x03 # no msg type for beacon, give it value 3 for now
-MSG_ID = 0x00
-DEST_ID = 0x07 # ground station destination id (7)
-SOURCE_ID = 0x0B
-OPCODE = 0x00 # dummy opcode
-
+# AlbertaSat Call Sign
+CALL_SIGN = "VE6 LRN"
 
 def check_port(port):
     """
@@ -83,11 +80,9 @@ def beacon(client_key, server, lock):
             try:
                 if current_time - beacon_timer["last_send"] > BEACON_RATE:
                     # 5 bytes for rest of header and 2 more for the length itself
-                    msg_len = len(uhf_params['BEACON']) + 5 + 2
-                    msg_len_bytes = msg_len.to_bytes(2, "little")
                     beacon_content = bytes(uhf_params['BEACON'], "utf-8")
-                    header_bytes = bytes([MSG_TYPE, MSG_ID, DEST_ID, SOURCE_ID, OPCODE])
-                    beacon_msg = header_bytes + msg_len_bytes + beacon_content
+                    header_bytes = bytes(CALL_SIGN, "utf-8")
+                    beacon_msg = header_bytes + beacon_content
                     client_pointer[client_key].sendall(beacon_msg)
                     if DEBUG:
                         print("Sent beacon")
@@ -298,7 +293,7 @@ def receive_msg(client_key, server, buffer, lock):
                     _, port = client_pointer[client_key].getsockname()
 
                     # Primitive check to see if messages intent was to modify UHF params
-                    if port == SIM_ENDUROSAT_UART_PORT and b"UHF:" in message:
+                    if port == SIM_ESAT_UART_PORT and b"UHF:" in message:
                         data = process_cmd(message.decode('utf-8'))
                         with lock:
                             if DEBUG:
@@ -336,28 +331,33 @@ def main():
         None
     """
 
-    comm_server = start_server(COMM_SERVER_HOSTNAME, SIM_ENDUROSAT_UART_PORT)
-    gs_server = start_server(GS_SERVER_HOSTNAME, SIM_ESAT_UHF_PORT)
+    esat_uart_server = start_server(ESAT_UART_SERVER_HOSTNAME, SIM_ESAT_UART_PORT)
+    esat_uhf_server = start_server(ESAT_UHF_SERVER_HOSTNAME, SIM_ESAT_UHF_PORT)
+    esat_beacon_server = start_server(ESAT_BEACON_SERVER_HOSTNAME, SIM_ESAT_BEACON_PORT)
 
     client_lock = threading.Lock()
 
 
-    comm_client = search_client(comm_server, client_lock)
-    client_pointer[COMM_CLIENT_KEY] = comm_client
-    gs_client = search_client(gs_server, client_lock)
-    client_pointer[GS_CLIENT_KEY] = gs_client
+    esat_uart_client = search_client(esat_uart_server, client_lock)
+    client_pointer[ESAT_UART_CLIENT_KEY] = esat_uart_client
 
-    if comm_client is None or gs_client is None:
+    esat_uhf_client = search_client(esat_uhf_server , client_lock)
+    client_pointer[GS_CLIENT_KEY] = esat_uhf_client
+
+    esat_beacon_client = search_client(esat_beacon_server , client_lock)
+    client_pointer[GS_BEACON_CLIENT_KEY] = esat_beacon_client
+
+    if esat_uart_client is None or esat_uhf_client is None:
         print("Failed to connect to client")
         return -1
 
     comm_listen = threading.Thread(target=receive_msg,
-                                args=(COMM_CLIENT_KEY, comm_server, gs_data, client_lock))
+                                args=(ESAT_UART_CLIENT_KEY, esat_uart_server, gs_data, client_lock))
     gs_listen = threading.Thread(target=receive_msg,
-                                args=(GS_CLIENT_KEY, gs_server, comm_data, client_lock))
+                                args=(GS_CLIENT_KEY, esat_uhf_server , comm_data, client_lock))
 
     comm_send = threading.Thread(target=send_msg,
-                                args=(COMM_CLIENT_KEY, comm_data, client_lock))
+                                args=(ESAT_UART_CLIENT_KEY, comm_data, client_lock))
     gs_send = threading.Thread(target=send_msg,
                                 args=(GS_CLIENT_KEY, gs_data, client_lock))
 
@@ -367,15 +367,16 @@ def main():
     comm_send.start()
     gs_send.start()
 
-    beacon(GS_CLIENT_KEY, gs_server, client_lock)
+    beacon(GS_BEACON_CLIENT_KEY, esat_beacon_server, client_lock)
 
     comm_listen.join()
     comm_send.join()
     gs_listen.join()
     gs_send.join()
 
-    comm_server.close()
-    gs_server.close()
+    esat_uart_server.close()
+    esat_uhf_server.close()
+    esat_beacon_server.close()
 
     return 0
 

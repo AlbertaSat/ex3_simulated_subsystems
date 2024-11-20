@@ -42,14 +42,8 @@ uhf_params = {'BAUD_RATE': 9600, 'BEACON':'beacon', 'MODE': 0}
 
 # Delimiter for command
 DELIMITER = ':'
-
-# Beacon Header constants
-MSG_TYPE = 0x03 # no msg type for beacon, give it value 3 for now
-MSG_ID = 0x00
-DEST_ID = 0x07 # ground station destination id (7)
-SOURCE_ID = 0x0B
-OPCODE = 0x00 # dummy opcode
-
+# AlbertaSat Call Sign
+CALL_SIGN = "VE6 LRN"
 
 def check_port(port):
     """
@@ -86,11 +80,9 @@ def beacon(client_key, server, lock):
             try:
                 if current_time - beacon_timer["last_send"] > BEACON_RATE:
                     # 5 bytes for rest of header and 2 more for the length itself
-                    msg_len = len(uhf_params['BEACON']) + 5 + 2
-                    msg_len_bytes = msg_len.to_bytes(2, "little")
                     beacon_content = bytes(uhf_params['BEACON'], "utf-8")
-                    header_bytes = bytes([MSG_TYPE, MSG_ID, DEST_ID, SOURCE_ID, OPCODE])
-                    beacon_msg = header_bytes + msg_len_bytes + beacon_content
+                    header_bytes = bytes(CALL_SIGN, "utf-8")
+                    beacon_msg = header_bytes + beacon_content
                     client_pointer[client_key].sendall(beacon_msg)
                     if DEBUG:
                         print("Sent beacon")

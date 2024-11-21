@@ -10,6 +10,7 @@ import socket
 import threading
 import time
 import select
+import sys
 
 DEBUG = 1
 BUFF_SIZE = 4096
@@ -17,10 +18,7 @@ SIM_ESAT_UART_PORT = 1805
 SIM_ESAT_UHF_PORT = 1808
 SIM_ESAT_BEACON_PORT = 1809
 BEACON_RATE = 10 # Set beacon to be sent every 10 seconds
-ESAT_UART_SERVER_HOSTNAME = '127.0.0.1'
-ESAT_UHF_SERVER_HOSTNAME = '127.0.0.1'
-ESAT_BEACON_SERVER_HOSTNAME = '127.0.0.1'
-
+DEFAULT_SERVER_HOSTNAME = '127.0.0.1'
 # Use lists for shared buffers to allow modification within threads
 gs_data = []
 comm_data = []
@@ -111,7 +109,6 @@ def start_server(hostname, port):
     Returns:
         server(socket): server socket object
     """
-
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((hostname, port))
@@ -330,10 +327,21 @@ def main():
     Returns:
         None
     """
+    hostname = ""
+    arg_len = len(sys.argv)
 
-    esat_uart_server = start_server(ESAT_UART_SERVER_HOSTNAME, SIM_ESAT_UART_PORT)
-    esat_uhf_server = start_server(ESAT_UHF_SERVER_HOSTNAME, SIM_ESAT_UHF_PORT)
-    esat_beacon_server = start_server(ESAT_BEACON_SERVER_HOSTNAME, SIM_ESAT_BEACON_PORT)
+    if arg_len == 1:
+        hostname = DEFAULT_SERVER_HOSTNAME
+    elif arg_len == 2:
+        hostname = sys.argv[1]
+    else:
+        print("Error: Incorrect cmd line arg usage.")
+        print("Usage: simulated_uhf.py <hostname> or simulated_uhf.py")
+        return -1
+
+    esat_uart_server = start_server(hostname, SIM_ESAT_UART_PORT)
+    esat_uhf_server = start_server(hostname, SIM_ESAT_UHF_PORT)
+    esat_beacon_server = start_server(hostname, SIM_ESAT_BEACON_PORT)
 
     client_lock = threading.Lock()
 

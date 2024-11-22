@@ -148,10 +148,23 @@ UHF:SET_MODE:3
 
 ```
 
-## Handling Clients Across Threads
+## Using command line arguments for hostnames
+The simulated UHF includes functionality for the user to provide hostnames for both uhf servers. This is intended to be used when testing on hardware and you don't want
+one or more of the hostnames to be localhost. If no command line arguments are given, both server's hostnames default to 127.0.0.1.\
 
-During satellite operation we will have times where the UHF loses connection with the groundstation. Because of this the simulated UHF provides
-functionality to enable clients to disconnect and reconnect to the server at any time. But because the client socket objects are shared between
-multiple threads in the simulated UHF program, we use a mutable data structure in python to act like a pointer to the socket objects. In conjunction with using a lock we can share this dictionary accross threads, so when a client disconnects and the simulated UHF attempts to reconnect (using search_client function) the new client socket object created is shared across threads via the client_pointer dictionary.
+Usage:
 
-Note that when a client disconnects, the simulated UHF will essentially stop all threads and operations and wait for the client to reconnect.
+```
+python3 simulated_uhf.py
+# or
+python3 simulated_uhf.py <ground facing side hostname>
+# or
+python3 simulated_uhf.py <ground facing side hostname> <satellite facing hostname>
+```
+
+The ground station facing side is the hostname you are expecting to use when you connect via the groundstation client. For example if you have the flight software and simulated
+UHF running off a zybo and the groundstation is being run on your device, You would give the ground facing side the hostname of the zybo, and not supply a command line arg
+for the satellite facing hostname since it already defaults to local host (important because its being run on the same device as coms handler in this case). The satellite facing
+side hostname is the hostname the coms handler expects to connect to. Using these command line arguments the user can run the simulated satellite on the same device as the
+groundstation software with using hardware, the flight side with hardware, same device if no hardware is used, or a different device then the flight and groundstation software 
+altogether.

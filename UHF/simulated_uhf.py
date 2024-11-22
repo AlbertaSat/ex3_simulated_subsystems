@@ -327,21 +327,34 @@ def main():
     Returns:
         None
     """
-    hostname = ""
+    # ground side hostname is the hostname used for connecting to groundstation clients
+    # like the beacon client and uhf client (in cli_groundstation program)
+    #
+    # satellite side is used for the for the satellite software to connect to (coms handler)
+    ground_side_hostname = ""
+    satellite_side_hostname = ""
     arg_len = len(sys.argv)
 
     if arg_len == 1:
-        hostname = DEFAULT_SERVER_HOSTNAME
+        ground_side_hostname = DEFAULT_SERVER_HOSTNAME
+        satellite_side_hostname = DEFAULT_SERVER_HOSTNAME
     elif arg_len == 2:
-        hostname = sys.argv[1]
+        ground_side_hostname = sys.argv[1]
+        satellite_side_hostname = DEFAULT_SERVER_HOSTNAME
+    elif arg_len == 3:
+        ground_side_hostname = sys.argv[1]
+        satellite_side_hostname = sys.argv[2]
     else:
         print("Error: Incorrect cmd line arg usage.")
-        print("Usage: simulated_uhf.py <hostname> or simulated_uhf.py")
+        print("""Usage: python3 simulated_uhf.py\n
+                or python3 simulated_uhf.py <ground side hostname>
+                or python3 simulated_uhf.py <ground side hostname> <satellite side hostname>
+              """)
         return -1
 
-    esat_uart_server = start_server(hostname, SIM_ESAT_UART_PORT)
-    esat_uhf_server = start_server(hostname, SIM_ESAT_UHF_PORT)
-    esat_beacon_server = start_server(hostname, SIM_ESAT_BEACON_PORT)
+    esat_uart_server = start_server(satellite_side_hostname, SIM_ESAT_UART_PORT)
+    esat_uhf_server = start_server(ground_side_hostname, SIM_ESAT_UHF_PORT)
+    esat_beacon_server = start_server(ground_side_hostname, SIM_ESAT_BEACON_PORT)
 
     client_lock = threading.Lock()
 

@@ -340,6 +340,7 @@ def main():
         satellite_side_hostname = DEFAULT_SERVER_HOSTNAME
     elif arg_len == 2:
         ground_side_hostname = sys.argv[1]
+        satellite_side_hostname = DEFAULT_SERVER_HOSTNAME
     elif arg_len == 3:
         ground_side_hostname = sys.argv[1]
         satellite_side_hostname = sys.argv[2]

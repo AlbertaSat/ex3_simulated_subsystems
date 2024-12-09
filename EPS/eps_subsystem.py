@@ -44,6 +44,15 @@ default_eps_state = {
     'WatchdogResetTime': 24.0,   # in hours
 }
 
+default_subsystem_state = {
+    'ADCS': False,
+    'Deployables': False,
+    'DFGM': False,
+    'GPS': False,
+    'IRIS': False,
+    'UHF': False
+}
+
 class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-instance-attributes
     """Holds the state of the EPS subsystem.
 
@@ -66,14 +75,77 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
         }
         self.updatable_parameters = ['WatchdogResetTime']
 
+        self.subsystems = {
+            'ADCS': False,
+            'Deployables': False,
+            'DFGM': False,
+            'GPS': False,
+            'IRIS': False,
+            'UHF': False
+        }
+
+        self.eps_on = True
+
         # Changing executable command tuples to dictionaries to point to fxns
         self.executable_commands = {
             'ResetDevice': self.reset_device,
+            'ResetSubsystems': self.reset_subsystems_state,
+            'SubsystemOn': self.subsystem_on,
+            'SubsystemOff': self.subsystem_off
+
         }
 
+    def turn_on_eps(self):
+        """Turn on the EPS subsystem"""
+        self.eps_on = True
+        return "EPS turned ON\n"
+    def turn_off_eps(self):
+        """Turn off the EPS subsystem"""
+        self.eps_on = False
+        return "EPS turned OFF\n"
     def reset_device(self):
-        """Reset the device to default state, which is defined at the top of this file. """
+        """Reset the device to default state, which is defined at the top of this file."""
+        if self.eps_on is False:
+            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
         self.set_state_dict(default_eps_state)
+    def reset_subsystems_state(self):
+        """Reset the subsystems to default state, which is defined at the top of this file."""
+        if self.eps_on is False:
+            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
+        self.subsystems = default_subsystem_state.copy()
+
+    def subsystem_on(self, subsystem_name):
+        """
+    Turn off the specified subsystem.
+
+    Args:
+        subsystem_name (str): The name of the subsystem to turn off.
+
+    Returns:
+        str: A message indicating the result of the operation.
+    """
+        if self.eps_on is False:
+            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
+        if subsystem_name in self.subsystems:
+            self.subsystems[subsystem_name] = True
+            return f"{subsystem_name} turned ON\n"
+        return f"ERROR: {subsystem_name} is not a valid subsystem\n"
+    def subsystem_off(self, subsystem_name):
+        """
+    Turn off the specified subsystem.
+
+    Args:
+        subsystem_name (str): The name of the subsystem to turn off.
+
+    Returns:
+        str: A message indicating the result of the operation.
+    """
+        if self.eps_on is False:
+            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
+        if subsystem_name in self.subsystems:
+            self.subsystems[subsystem_name] = False
+            return f"{subsystem_name} turned OFF\n"
+        return f"ERROR: {subsystem_name} is not a valid subsystem\n"
 
 
     def set_state_dict(self, new_state_dict):

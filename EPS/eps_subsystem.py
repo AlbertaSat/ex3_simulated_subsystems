@@ -108,11 +108,13 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
         if self.eps_on is False:
             return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
         self.set_state_dict(default_eps_state)
+        return "EPS returned to default state\n"
     def reset_subsystems_state(self):
         """Reset the subsystems to default state, which is defined at the top of this file."""
         if self.eps_on is False:
             return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
         self.subsystems = default_subsystem_state.copy()
+        return "Subsystems returned to default state\n"
 
     def subsystem_on(self, subsystem_name):
         """

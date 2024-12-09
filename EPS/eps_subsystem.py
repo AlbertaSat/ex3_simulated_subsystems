@@ -98,23 +98,23 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
     def turn_on_eps(self):
         """Turn on the EPS subsystem"""
         self.eps_on = True
-        return "EPS turned ON\n"
+        print("EPS turned ON\n")
     def turn_off_eps(self):
         """Turn off the EPS subsystem"""
         self.eps_on = False
-        return "EPS turned OFF\n"
+        print("EPS turned OFF\n")
     def reset_device(self):
         """Reset the device to default state, which is defined at the top of this file."""
         if self.eps_on is False:
-            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
+            print("ERROR: EPS turned off. Please turn on EPS to execute command\n")
         self.set_state_dict(default_eps_state)
-        return "EPS returned to default state\n"
+        print("EPS printed to default state\n")
     def reset_subsystems_state(self):
         """Reset the subsystems to default state, which is defined at the top of this file."""
         if self.eps_on is False:
-            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
+            print("ERROR: EPS turned off. Please turn on EPS to execute command\n")
         self.subsystems = default_subsystem_state.copy()
-        return "Subsystems returned to default state\n"
+        print("Subsystems printed to default state\n")
 
     def subsystem_on(self, subsystem_name):
         """
@@ -123,15 +123,15 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
     Args:
         subsystem_name (str): The name of the subsystem to turn off.
 
-    Returns:
+    prints:
         str: A message indicating the result of the operation.
     """
         if self.eps_on is False:
-            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
+            print("ERROR: EPS turned off. Please turn on EPS to execute command\n")
         if subsystem_name in self.subsystems:
             self.subsystems[subsystem_name] = True
-            return f"{subsystem_name} turned ON\n"
-        return f"ERROR: {subsystem_name} is not a valid subsystem\n"
+            print(f"{subsystem_name} turned ON\n")
+        print(f"ERROR: {subsystem_name} is not a valid subsystem\n")
     def subsystem_off(self, subsystem_name):
         """
     Turn off the specified subsystem.
@@ -139,15 +139,15 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
     Args:
         subsystem_name (str): The name of the subsystem to turn off.
 
-    Returns:
+    prints:
         str: A message indicating the result of the operation.
     """
         if self.eps_on is False:
-            return "ERROR: EPS turned off. Please turn on EPS to execute command\n"
+            print("ERROR: EPS turned off. Please turn on EPS to execute command\n")
         if subsystem_name in self.subsystems:
             self.subsystems[subsystem_name] = False
-            return f"{subsystem_name} turned OFF\n"
-        return f"ERROR: {subsystem_name} is not a valid subsystem\n"
+            print(f"{subsystem_name} turned OFF\n")
+        print(f"ERROR: {subsystem_name} is not a valid subsystem\n")
 
 
     def set_state_dict(self, new_state_dict):

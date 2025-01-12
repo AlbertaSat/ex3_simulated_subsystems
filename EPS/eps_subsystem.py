@@ -50,7 +50,9 @@ default_subsystem_state = {
     'DFGM': False,
     'GPS': False,
     'IRIS': False,
-    'UHF': False
+    'UHF': False,
+    'AntennaBurnWireGPIO': False,
+    'UHFBurnWireGPIO': False
 }
 
 class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-instance-attributes
@@ -81,7 +83,9 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
             'DFGM': False,
             'GPS': False,
             'IRIS': False,
-            'UHF': False
+            'UHF': False,
+            'AntennaBurnWireGPIO': False,
+            'UHFBurnWireGPIO': False
         }
 
         self.eps_on = True

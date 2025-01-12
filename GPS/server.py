@@ -17,7 +17,7 @@ import os
 import socket
 import sys
 
-PATH="/tmp/server.sock"
+PATH="/tmp/fifo_socket_gps_device"
 
 def open_server() -> None:
     """

@@ -95,7 +95,9 @@ class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-inst
             'ResetDevice': self.reset_device,
             'ResetSubsystems': self.reset_subsystems_state,
             'SubsystemOn': self.subsystem_on,
-            'SubsystemOff': self.subsystem_off
+            'SubsystemOff': self.subsystem_off,
+            'TurnOnEPS': self.turn_on_eps,
+            'TurnOffEPS': self.turn_off_eps
 
         }
 

@@ -110,6 +110,20 @@ Turns off a specific subsystem by name.
    GPS turned OFF
    ```
 
+#### e. Turn On EPS
+Turns on the EPS.
+- **Command**
+   ```bash
+   echo -n "execute:TurnOnEPS" | nc 127.0.0.1 1801
+   ```
+
+#### e. Turn Off EPS
+Turns off the EPS.
+- **Command**
+   ```bash
+   echo -n "execute:TurnOffEPS" | nc 127.0.0.1 1801
+   ```
+
 #### Supported Subsystems:
 - `ADCS`
 - `Deployables`

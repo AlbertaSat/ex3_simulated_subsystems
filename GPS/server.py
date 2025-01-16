@@ -17,14 +17,16 @@ import os
 import socket
 import sys
 
+DEFAULT_HOST = '127.0.0.1'
+DEFAULT_PORT = 1999     # 1999 is a placeholder, change later
 PATH="/tmp/fifo_socket_gps_device"
 
-def open_server() -> None:
+def open_server(port) -> None:
     """
     Opens a listening server
     """
     with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
-        s.bind(PATH)
+        s.bind((DEFAULT_HOST, port))
         print(f"Starting server on {PATH}\n")
         while True:
             print(f"Server started on {PATH}\nWaiting for Client.")
@@ -66,4 +68,4 @@ def open_server() -> None:
 if __name__ == "__main__":
     if os.path.exists(PATH):
         os.remove(PATH)
-    open_server()
+    open_server(DEFAULT_PORT)

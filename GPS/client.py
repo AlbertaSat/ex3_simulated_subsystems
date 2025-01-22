@@ -20,7 +20,7 @@ Afterwards you may enter any of the valid commands from the client.
 import socket
 import sys
 
-PATH="/tmp/server.sock"
+PATH="/tmp/fifo_socket_gps_device"
 
 def connect() -> None:
     """

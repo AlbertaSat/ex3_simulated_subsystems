@@ -21,7 +21,7 @@ import socket
 import sys
 
 DEFAULT_HOST = '127.0.0.1'
-DEFAULT_PORT = 1999
+DEFAULT_PORT = 1810
 PATH="/tmp/fifo_socket_gps_device"
 
 def connect(host, port) -> None:

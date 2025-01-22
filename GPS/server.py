@@ -19,21 +19,20 @@ import sys
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1999     # 1999 is a placeholder, change later
-PATH="/tmp/fifo_socket_gps_device"
+# PATH="/tmp/fifo_socket_gps_device"
 
-def open_server(port) -> None:
+def open_server(host, port) -> None:
     """
     Opens a listening server
     """
-    with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
-        s.bind((DEFAULT_HOST, port))
-        print(f"Starting server on {PATH}\n")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.bind((host, port))
         while True:
-            print(f"Server started on {PATH}\nWaiting for Client.")
-            s.listen()
-            conn, addr = s.accept()
+            print(f"Server started on port {port}\nWaiting for client.")
+            server.listen()
+            conn, addr = server.accept()
             with conn:
-                print("Client connected.", addr)
+                print("Client connected. Addr:", addr)
                 while True:
                     command=conn.recv(1024) #buffsize 1024 bytes
                     command=command.decode("utf-8")
@@ -46,8 +45,6 @@ def open_server(port) -> None:
                         break
                     if command == "terminate":
                         print("Closing connection.")
-                        os.remove(PATH)
-                        print("Server socket file removed.")
                         sys.exit(0)
 
                     if command == "time":
@@ -62,10 +59,6 @@ def open_server(port) -> None:
                         command="invalid command"
                         data=b"[Server] Invalid command."
                     conn.send(data)
-        os.remove(PATH)
-        print("Server socket file removed.")
 
 if __name__ == "__main__":
-    if os.path.exists(PATH):
-        os.remove(PATH)
-    open_server(DEFAULT_PORT)
+    open_server(DEFAULT_HOST, DEFAULT_PORT)

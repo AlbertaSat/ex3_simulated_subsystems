@@ -13,7 +13,6 @@ At the moment, the three commands are:
 To test the server/client you must run both files in a UNIX environment.
 Afterwards you may enter any of the valid commands from the client.
 """
-import os
 import socket
 import sys
 

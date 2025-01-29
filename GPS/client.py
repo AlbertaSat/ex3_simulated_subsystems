@@ -20,30 +20,32 @@ Afterwards you may enter any of the valid commands from the client.
 import socket
 import sys
 
+DEFAULT_HOST = '127.0.0.1'
+DEFAULT_PORT = 1810
 PATH="/tmp/fifo_socket_gps_device"
 
-def connect() -> None:
+def connect(host, port) -> None:
     """
     Connects to server and allows for communication.
     """
-    with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
-        s.connect(PATH)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
+        client.connect((host, port))
         print("Client connected.")
 
         while True:
             print("Possible commands: latlong, time, returnstate, ping, disconnect, terminate")
             commandstr=input(">>>")
             command = commandstr.encode('utf-8')
-            s.send(command)
+            client.send(command)
 
             if commandstr in ("terminate", "disconnect"):
                 print("Disconnecting")
                 break
-            data=s.recv(1024)
+            data=client.recv(1024)
             print(data.decode('utf-8'))
 
     print("Client disconnected.")
     sys.exit(0)
 
 if __name__ == "__main__":
-    connect()
+    connect(DEFAULT_HOST, DEFAULT_PORT)

@@ -13,25 +13,23 @@ At the moment, the three commands are:
 To test the server/client you must run both files in a UNIX environment.
 Afterwards you may enter any of the valid commands from the client.
 """
-import os
 import socket
 import sys
 
-PATH="/tmp/server.sock"
-
-def open_server() -> None:
+DEFAULT_HOST = '127.0.0.1'
+DEFAULT_PORT = 1810
+def open_server(host, port) -> None:
     """
     Opens a listening server
     """
-    with socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET) as s:
-        s.bind(PATH)
-        print(f"Starting server on {PATH}\n")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.bind((host, port))
         while True:
-            print(f"Server started on {PATH}\nWaiting for Client.")
-            s.listen()
-            conn, addr = s.accept()
+            print(f"Server started on port {port}\nWaiting for client.")
+            server.listen()
+            conn, addr = server.accept()
             with conn:
-                print("Client connected.", addr)
+                print("Client connected. Addr:", addr)
                 while True:
                     command=conn.recv(1024) #buffsize 1024 bytes
                     command=command.decode("utf-8")
@@ -44,8 +42,6 @@ def open_server() -> None:
                         break
                     if command == "terminate":
                         print("Closing connection.")
-                        os.remove(PATH)
-                        print("Server socket file removed.")
                         sys.exit(0)
 
                     if command == "time":
@@ -60,10 +56,6 @@ def open_server() -> None:
                         command="invalid command"
                         data=b"[Server] Invalid command."
                     conn.send(data)
-        os.remove(PATH)
-        print("Server socket file removed.")
 
 if __name__ == "__main__":
-    if os.path.exists(PATH):
-        os.remove(PATH)
-    open_server()
+    open_server(DEFAULT_HOST, DEFAULT_PORT)

@@ -16,11 +16,11 @@ The EPS subsystem communicates using TCP sockets. Commands are sent as strings t
 1. Clone this repository and navigate to the directory containing `eps_subsystem.py`.
 2. Start the subsystem server by running:
    ```bash
-   python eps_subsystem.py
+   python3 eps_subsystem.py
    ```
    Optionally, specify a custom port:
    ```bash
-   python eps_subsystem.py 1234
+   python3 eps_subsystem.py 1234
    ```
 3. The server will now listen for incoming commands.
 
@@ -59,7 +59,11 @@ Use these commands to modify the value of a parameter.
    ```
 
 #### Updatable Parameters:
-- `WatchdogResetTime` - Specify a new time (in hours) for the watchdog reset.
+- `Temperature` - Current temperature in degrees Celsius.
+- `Voltage` - Current voltage in volts.
+- `Current` - Current in amps.
+- `BatteryState` - Current state of the battery.
+- `WatchdogResetTime` - Time remaining for the watchdog reset in hours.
 
 ### 3. **Execute Commands**
 Use these commands to perform predefined actions on the EPS subsystem.
@@ -109,15 +113,25 @@ Turns off a specific subsystem by name.
    ```
    GPS turned OFF
    ```
+#### e. Check the state of a Subsystem
+Checks if the subsystem is ON or OFF.
+- **Command**:
+   ```bash
+   echo -n "execute:SubsystemState:GPS" | nc 127.0.0.1 1801
+   ```
+- **Expected Output**:
+   ```
+   GPS is OFF
+   ```
 
-#### e. Turn On EPS
+#### f. Turn On EPS
 Turns on the EPS.
 - **Command**
    ```bash
    echo -n "execute:TurnOnEPS" | nc 127.0.0.1 1801
    ```
 
-#### e. Turn Off EPS
+#### g. Turn Off EPS
 Turns off the EPS.
 - **Command**
    ```bash

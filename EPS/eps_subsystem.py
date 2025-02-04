@@ -110,6 +110,6 @@ if __name__ == "__main__":
                 data = conn.recv(1024).decode().strip()
                 if not data:
                     break
-                response = eps.handle_command(data)
-                if response:
-                    conn.sendall((response+"\n").encode())
+                RESPONSE = eps.handle_command(data)
+                if RESPONSE:
+                    conn.sendall((RESPONSE+"\n").encode())

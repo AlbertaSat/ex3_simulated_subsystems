@@ -45,6 +45,7 @@ Use these commands to retrieve the value of a parameter.
 - `Current` - Current in amps.
 - `BatteryState` - Current state of the battery.
 - `WatchdogResetTime` - Time remaining for the watchdog reset in hours.
+- `EPSState` - State of EPS (ON/OFF).
 
 ### 2. **Update Commands**
 Use these commands to modify the value of a parameter.
@@ -62,7 +63,6 @@ Use these commands to modify the value of a parameter.
 - `Temperature` - Current temperature in degrees Celsius.
 - `Voltage` - Current voltage in volts.
 - `Current` - Current in amps.
-- `BatteryState` - Current state of the battery.
 - `WatchdogResetTime` - Time remaining for the watchdog reset in hours.
 
 ### 3. **Execute Commands**
@@ -78,7 +78,7 @@ Resets the EPS subsystem to its default state.
    ```
 - **Expected Output**:
    ```
-   Command ResetDevice executed
+   Device reset to default state
    ```
 
 #### b. Reset All Subsystems
@@ -89,7 +89,7 @@ Resets all subsystems to their default state.
    ```
 - **Expected Output**:
    ```
-   Command ResetSubsystems executed
+   Subsystems reset to default state
    ```
 
 #### c. Turn On a Subsystem
@@ -121,7 +121,7 @@ Checks if the subsystem is ON or OFF.
    ```
 - **Expected Output**:
    ```
-   GPS is OFF
+   GPS is OFF/ON
    ```
 
 #### f. Turn On EPS

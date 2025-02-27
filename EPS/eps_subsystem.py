@@ -3,7 +3,7 @@ import sys
 import socket
 
 DEFAULT_HOST = '127.0.0.1'
-DEFAULT_PORT = 1801
+DEFAULT_PORT = 1804
 COMMAND_DELIMITER = ':'
 
 default_eps_state = {
@@ -102,14 +102,23 @@ if __name__ == "__main__":
         server_socket.bind((DEFAULT_HOST, PORT))
         server_socket.listen()
         print("EPS subsystem listening for connections...")
-
         while True:
             conn, addr = server_socket.accept()
-            with conn:
-                print(f"Connected by {addr}")
-                data = conn.recv(1024).decode().strip()
-                if not data:
-                    break
-                RESPONSE = eps.handle_command(data)
-                if RESPONSE:
-                    conn.sendall((RESPONSE+"\n").encode())
+            print(f"Connected by {addr}")
+
+            # Keep connection open for multiple commands
+            while True:
+                try:
+                    data = conn.recv(1024).decode().strip()
+                    if not data:
+                        print("Client disconnected.")
+                        break
+
+                    RESPONSE = eps.handle_command(data)
+                    if RESPONSE:
+                        conn.sendall((RESPONSE + "\n").encode())
+
+                except ConnectionResetError:
+                    print("Client disconnected abruptly.")
+                    break  # Exit loop if client forcefully disconnects
+            conn.close()  # Close the connection after client disconnects

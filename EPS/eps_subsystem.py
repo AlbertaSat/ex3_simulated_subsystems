@@ -1,42 +1,13 @@
-"""This python program represents a simulated version of the EPS payload for ExAlta3.
-
-For now the sub system communicates with strings over a TCP socket. The strings are parsed
-into a command type and associated data.
-
-Until we know more system specs I am assuming there are three types of commands that can be sent:
-    - Request - Request a paramater from the state dictionary
-    - Update  - Update a parameter in the state dictionary
-    - Execute - Execute a command (e.g. reset watchdog timer)
-
-# Example to update the WatchdogResetTime:
-     update:WatchdogResetTime:48.0
-
-# Example to request the Voltage:
-    request:Voltage
-
-# Example to execute a ResetWatchdogTimer command:
-    execute:ResetWatchdogTimer
-
-For now you can test your commands using netcat (nc) from the command line, and piping the command
-to the socket from a seperate text file.
-
-Usage: ESP_component.py non-default_port_num
-
-Copyright 2023 [Devin Headrick]. Licensed under the Apache License, Version 2.0
-"""
-
+"""This python program represents a simulated version of the EPS payload for ExAlta3."""
 import sys
-sys.path.append("../")
-from socket_stuff import create_socket_and_listen   # pylint: disable=C0413
-from command_handler import CommandHandler          # pylint: disable=C0413
-from command_factory import CommandFactory          # pylint: disable=C0413
-
+import socket
 
 DEFAULT_HOST = '127.0.0.1'
 DEFAULT_PORT = 1801
 COMMAND_DELIMITER = ':'
 
 default_eps_state = {
+    'EPSState' : 'ON',
     'Temperature': 32,           # in degrees C
     'Voltage': 5.24,             # in volts
     'Current': 1.32,             # in amps
@@ -44,79 +15,101 @@ default_eps_state = {
     'WatchdogResetTime': 24.0,   # in hours
 }
 
-class EPSSubsystem: #pylint:disable=too-few-public-methods disable=too-many-instance-attributes
-    """Holds the state of the EPS subsystem.
+default_subsystem_state = {
+    'ADCS': False,
+    'Deployables': False,
+    'DFGM': False,
+    'GPS': False,
+    'IRIS': False,
+    'UHF': False,
+    'AntennaBurnWireGPIO': False,
+    'UHFBurnWireGPIO': False
+}
 
-    Tuples are defined that define the executable commands and updatable parameters.
-    Functions are defined which are called upon receipt of associated execute commands.
-    """
+class EPSSubsystem:
+    """Handles EPS subsystem state and command execution."""
 
     def __init__(self):
-        self.temperature = 32            # in degrees C
-        self.voltage = 5.24              # in volts
-        self.current = 1.32              # in amps
-        self.battery_state = 'Charging'
-        self.watchdog_reset_time = 24.0  # in hours
-        self.state = {
-            'Temperature': self.temperature,
-            'Voltage': self.voltage,
-            'Current': self.current,
-            'BatteryState': self.battery_state,
-            'WatchdogResetTime': self.watchdog_reset_time,
-        }
-        self.updatable_parameters = ['WatchdogResetTime']
+        self.state = default_eps_state.copy()
+        self.subsystems = default_subsystem_state.copy()
+        self.eps_on = True
 
-        # Changing executable command tuples to dictionaries to point to fxns
-        self.executable_commands = {
-            'ResetDevice': self.reset_device,
-        }
+    def handle_command(self, command):
+        """Handles commands"""
+        parts = command.strip().split(COMMAND_DELIMITER)
+        cmd_type = parts[0].lower()
 
-    def reset_device(self):
-        """Reset the device to default state, which is defined at the top of this file. """
-        self.set_state_dict(default_eps_state)
+        if cmd_type == "request" and len(parts) == 2:
+            return str(self.state.get(parts[1], "Unknown parameter"))
 
+        if cmd_type == "update" and len(parts) == 3:
+            value = parts[2]
+            if value.replace('.', '', 1).isdigit():
+                value = float(value)
+                self.state[parts[1]] = value
+                return f"{parts[1]} updated to {self.state[parts[1]]}"
+            return "Unknown parameter"
 
-    def set_state_dict(self, new_state_dict):
-        """Set the state dictionary to the provided dictionary
+        if cmd_type == "execute" and len(parts) == 2:
+            return self.execute_command(parts[1])
+        if cmd_type == "execute" and len(parts) == 3:
+            return self.subsystem_commands(parts[1],parts[2])
 
-        This can be used to inject states into this subsystem for testing purposes.
-        """
-        try:
-            for key in self.state:
-                if key in new_state_dict:
-                    self.state[key] = new_state_dict[key]
+        return "Invalid command format"
 
-        except Exception as exeption: # pylint: disable=broad-except
-            print("Error setting state dictionary: " + str(exeption) +
-                  " \n Reset State to default values.")
-
+    def execute_command(self, command):
+        """Handles all executable commands"""
+        if command == "ResetDevice":
+            self.state = default_eps_state.copy()
+            return "Device reset to default state"
+        if command == "ResetSubsystems":
+            if self.eps_on is True:
+                self.subsystems = default_subsystem_state.copy()
+            return "EPS is off" if not self.eps_on else "Subsystems reset to default state"
+        if command == "TurnOnEPS":
+            self.eps_on = True
+            self.state["EPSState"] = "ON"
+            return "EPS turned ON"
+        if command == "TurnOffEPS":
+            self.eps_on = False
+            self.state["EPSState"] = "OFF"
+            return "EPS turned OFF"
+        return "Unknown command"
+    def subsystem_commands(self,command,subsystem):
+        "Handles on/off for other subsystems"
+        if self.eps_on is False:
+            return "EPS is off. Turn on EPS to execute subsystem commands"
+        if subsystem not in self.subsystems:
+            return "Invalid subsystem"
+        if command == "SubsystemOn":
+            self.subsystems[subsystem] = True
+            return f"{subsystem} turned ON"
+        if command == "SubsystemOff":
+            self.subsystems[subsystem] = False
+            return f"{subsystem} turned OFF"
+        if command == "SubsystemState":
+            return f"{subsystem} is ON" if self.subsystems[subsystem] else f"{subsystem} is OFF"
+        return "Unknown command"
 
 if __name__ == "__main__":
-    # If there is no arg, port is default otherwise use the arg
-    PORT = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PORT
+    PORT = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
 
     print(f"Starting EPS subsystem on port {PORT}")
 
-    # Concrete factory instance relies on subsystem class that contains associated state and fxns
-    command_factory = CommandFactory(EPSSubsystem())
+    eps = EPSSubsystem()
 
-    command_handler = CommandHandler(command_factory)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.bind((DEFAULT_HOST, PORT))
+        server_socket.listen()
+        print("EPS subsystem listening for connections...")
 
-    create_socket_and_listen(host=DEFAULT_HOST, port=PORT, command_handler_obj=command_handler)
-
-
-# pylint: disable=duplicate-code
-# no error
-__author__ = "Devin Headrick"
-__copyright__ = """
-    Copyright (C) 2023, [Devin Headrick]
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License."""
+        while True:
+            conn, addr = server_socket.accept()
+            with conn:
+                print(f"Connected by {addr}")
+                data = conn.recv(1024).decode().strip()
+                if not data:
+                    break
+                RESPONSE = eps.handle_command(data)
+                if RESPONSE:
+                    conn.sendall((RESPONSE+"\n").encode())

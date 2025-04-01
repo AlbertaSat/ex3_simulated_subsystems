@@ -3,7 +3,7 @@ import sys
 import socket
 
 DEFAULT_HOST = '127.0.0.1'
-DEFAULT_PORT = 1804
+DEFAULT_PORT = 1801
 COMMAND_DELIMITER = ':'
 
 default_eps_state = {

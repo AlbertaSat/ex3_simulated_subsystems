@@ -13,6 +13,8 @@ default_eps_state = {
     'Current': 1.32,             # in amps
     'BatteryState': 'Charging',
     'WatchdogResetTime': 24.0,   # in hours
+    'Time': "TIME",
+    'Ping': True,
 }
 
 default_subsystem_state = {

@@ -1,0 +1,95 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+
+
+services:
+  eps:
+    environment:
+      - PROGRAM=eps_subsystem.py
+    build:
+      context: ../
+      args:
+        FOLDERNAME: EPS
+        BUILDDIR: docker_with_compose
+      dockerfile: ./docker_with_compose/Dockerfile
+    volumes:
+      - sharedUtils:/app/utils
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./EPS
+          target: /app
+    ports:
+      - 1801:1801
+
+  deployables:
+    environment:
+      - PROGRAM=deployables_subsystem.py
+    build:
+      context: ../
+      args:
+        FOLDERNAME: Deployables
+        BUILDDIR: docker_with_compose
+      dockerfile: ./docker_with_compose/Dockerfile
+    volumes:
+      - sharedUtils:/app/utils
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./Deployables
+          target: /app
+    ports:
+      - 1811:1811
+
+  dfgm:
+    environment:
+      - PROGRAM=dfgm_subsystem.py
+    build:
+      context: ../
+      args:
+        FOLDERNAME: DFGM
+        BUILDDIR: docker_with_compose
+      dockerfile: ./docker_with_compose/Dockerfile
+    volumes:
+      - sharedUtils:/app/utils
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./DFGM
+          target: /app
+    ports:
+      - 1802:1802
+
+  iris:
+    environment:
+      - PROGRAM=iris_simulated_server.py
+    build:
+      context: ../
+      args:
+        FOLDERNAME: IRIS
+        BUILDDIR: docker_with_compose
+      dockerfile: ./docker_with_compose/Dockerfile
+    volumes:
+      - sharedUtils:/app/utils
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./IRIS
+          target: /app
+    ports:
+      - 1821:1821
+
+volumes:
+  sharedUtils:
+    driver: local
+    driver_opts:
+      type: none
+      device: ../Utilities
+      o: bind

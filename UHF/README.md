@@ -1,170 +1,267 @@
-# Simulated UHF Documentation
+# simulated_uhf.py — Usage & Reference
 
-## Usage
+Simulates a UHF transceiver radio as a set of TCP servers, allowing both sides of a satellite communications link (ground station and satellite/FSW) to be exercised without physical hardware. Includes an interactive fault-injection CLI for reliability and error-handling testing.
 
-The UHF lies between the communications subsystem and the groundstation in the tall thin architecture. The simulated UHF is designed to be able to connect to 2 TCP clients on ports 1234 (Communications handler) and 1235 (Groundstation). Messages sent from one port will be "echoed" to the other port to simulate the sending of messages between groundstation and space craft (Unless the space craft sends a command, see below section "How to Modify UHF Parameters").
+---
 
-The generic_client.py program can act as a basic simulated groundstation and communications handler. It can send and receive messages through standard IO. This program takes a single command line argument, which is the port it would like to connect to. To test the simulated UHF use the generic client programs like so:
+## Table of Contents
 
-### With Script
+1. [Quick Start](#quick-start)
+2. [Architecture Overview](#architecture-overview)
+3. [Launch Options](#launch-options)
+4. [Fault Injection CLI](#fault-injection-cli)
+   - [Directions](#directions)
+   - [Commands](#commands)
+   - [Examples](#examples)
+5. [Fault Types Explained](#fault-types-explained)
+6. [Testing Scenarios](#testing-scenarios)
 
-Cd to UHF directory within ex3_simulated_subsystems repository:
+---
 
-``` bash
-cd UHF
-```
+## Quick Start
 
-Run bash script to boot terminals for simulated UHF and two generic clients.
-
-``` bash
-./test_sim_uhf.sh
-```
-
-You can confirm the clients connected to the simulated UHF tcp servers by looking out at the output on the terminal for the simulated UHF.
-
-``` text
-Connected to ('127.0.0.1', 56812)
-Connected to ('127.0.0.1', 60710)
-```
-
-Then verify that the beacon is being transmitted to groundstation.
-
-``` text
-Connected to 127.0.0.1:1235
-Received: beacon
-```
-
-Now you can send messages between the groundstation and comms handler by typing messages in their terminal via standard input.
-
-GS Terminal
-
-``` text
-Hello from gs
-```
-
-you should soon see:
-
-comms handler Terminal
-
-``` text
-Received: Hello from gs
-```
-
-Next, verify you can send commands to UHF via comms handler side terminal (In reality the gs would send the command and comms handler would direct the command to the UHF handler, which would modify the UHF parameters. This is merely for demonstration/testing purposes).
-
-``` text
-UHF:SET_MODE:6
-```
-
-to learn more about sending commands see the section below "How to Modify UHF Parameters".
-
-### Without Script
-
-Start the simulated UHF
-
-``` bash
+**Fully simulated (single machine):**
+```bash
 python3 simulated_uhf.py
 ```
 
-Start Communications handler (In seperate terminal session)
-
-``` bash
-python3 generic_client.py 1234
+**Partially simulated (SBC satellite + ground station computer):**
+```bash
+# On the ground station machine — expose the UART server on the LAN interface
+python3 simulated_uhf.py --uart-ip 192.168.1.50
 ```
 
-Start Groundstation (In seperate terminal session)
-
-``` bash
-python3 generic_client.py 1235
+Once running, the fault injection prompt appears:
+```
+uhf-fault>
 ```
 
-Now test communication between generic clients by typing a message and hitting enter in either one of the generic client terminal sessions. If it is set up correctly you should see the message received by the other generic client by standard output in the respective terminal session.
+---
 
-In order to use the simulated UHF program with other software the process is much the same. Start by running the simulated_uhf.py program, then connect to the UHF by using a separate program using hostname 127.0.0.1 and ports 1234 and 1235.
+## Architecture Overview
 
-## How to Modify UHF Parameters
-
-In order to change the operating parameters of the UHF, the simulated UHF will need to recieve a command (specifically formatted message) from the communications handler TCP client. The command format is as follows:
-
-``` text
-
-system:request:data
+The simulator runs three independent daemon threads and one interactive CLI thread:
 
 ```
+Ground Station Client          Satellite / FSW Client
+        │                               │
+        │ TCP :1808                     │ TCP :1805
+        ▼                               ▼
+ ┌─────────────────┐           ┌─────────────────┐
+ │  Radio Server   │           │   UART Server   │
+ │  (GS side)      │           │   (SAT side)    │
+ └────────┬────────┘           └────────┬────────┘
+          │  radio_buffer →             │
+          │        ← uart_buffer        │
+          └──────────────┬──────────────┘
+                         │
+                  ┌──────┴──────┐
+                  │  FaultState │  ← CLI thread arms faults here
+                  └─────────────┘
 
-__system__: The system portion of the message is just the name of the subsystem. The only acceptable possibility for this value is the string "UHF". If any other string is entered a message will be sent to comm handler telling it an invalid system was given. This is merely measure taken in case future functionality needs to be added to the function that processes commands.
-
-__request__: This part of the command is what we are asking the UHF to do. There are 6 possible options currently and more can be added in the future if neccesary.
-
-- "GET_MODE": This command will send back the value of the current mode for the UHF to the comms handler.
-- "SET_MODE": This command will set the mode with the value of the "data" portion of the command. Data must be a valid integer to successfully set mode. Otherwise error messge will be returned to comms handler.
-- "GET_BEACON": This command will send back the value of the current beacon string for the UHF to the comms handler.
-- "SET_BEACON": This command will set the beacon string with the value of the "data" portion of the command.
-- "GET_BAUD_RATE": This command will send back the value of the current baud rate for the UHF to the comms handler.
-- "SET_MODE": This command will set the baud rate with the value of the "data" portion of the command. Data must be a valid integer to successfully set baud rate. Otherwise error messge will be returned to comms handler.
-
-The command needs to be formatted in this manner because the simulated UHF logic checks for two things upon receiving a message.
-
-1. It checks if the clients port (client that is currently receiving the message) is the communications side client port.
-2. It checks if the substring "UHF:" is in the message.
-
-Note that the message is split on the global constant called "DELIMITER" within the simulated_uhf.py file which is assigned a string containing a colon (":"). The colon needs to be used as a delimiter in the command because the program expects it. Failure to use a colon as the delimiter will not successfully change the beacon message.
-
-If a "get" style command is given, the data portion of the command will not be used. but it is still neccesary to add the delimiter at the end of the message, otherwise the action will not be performed. For example if we want to get the value of the beacon, the data portion of the command is not neccesary so we send the following command to the UHF through the comms handler:
-
-``` text
-
-UHF:GET_BEACON:
-
+ Beacon Server (:1809) — transmits call sign every 30s independently
 ```
 
-As previously mentioned because the data portion of the command is not use we can also do:
+**Data flow:** A packet sent by the GS client arrives at the Radio Server, is placed in `uart_buffer`, and is picked up by the UART Server to be forwarded to the satellite client — and vice versa. Every packet transiting this path passes through `FaultState.apply_faults()` before being sent, which is where injected faults fire.
 
-``` text
+**Ports:**
 
-UHF:GET_BEACON:2132132u
+| Port | Server | Purpose |
+|------|--------|---------|
+| 1805 | UART Server | Satellite / FSW connection |
+| 1808 | Radio Server | Ground station connection |
+| 1809 | Beacon Server | Periodic beacon transmission |
 
-```
+---
 
-Either will successfully send the beacon string value to the comms handler.
+## Launch Options
 
-__Examples of command using "data" field__:
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--uart-ip <addr>` | `127.0.0.1` | IP the UART server binds to (satellite-facing) |
+| `--radio-ip <addr>` | `127.0.0.1` | IP the Radio server binds to (GS-facing) |
+| `--beacon-ip <addr>` | `127.0.0.1` | IP the Beacon server binds to |
 
-``` text
+For single-machine testing all defaults are fine. For SBC testing, set `--uart-ip` to the ground station's LAN IPv4 address so the SBC can reach the UART server across the network.
 
-UHF:SET_BEACON:This is my new beacon msg
+---
 
-```
+## Fault Injection CLI
 
-``` text
-
-UHF:SET_BAUD_RATE:4500
-
-```
-
-``` text
-
-UHF:SET_MODE:3
-
-```
-
-## Using command line arguments for hostnames
-The simulated UHF includes functionality for the user to provide hostnames for both uhf servers. This is intended to be used when testing on hardware and you don't want
-one or more of the hostnames to be localhost. If no command line arguments are given, both server's hostnames default to 127.0.0.1.\
-
-Usage:
+After launch, the simulator prints the command reference and drops into the interactive prompt:
 
 ```
-python3 simulated_uhf.py
-# or
-python3 simulated_uhf.py <ground facing side hostname>
-# or
-python3 simulated_uhf.py <ground facing side hostname> <satellite facing hostname>
+uhf-fault>
 ```
 
-The ground station facing side is the hostname you are expecting to use when you connect via the groundstation client. For example if you have the flight software and simulated
-UHF running off a zybo and the groundstation is being run on your device, You would give the ground facing side the hostname of the zybo, and not supply a command line arg
-for the satellite facing hostname since it already defaults to local host (important because its being run on the same device as coms handler in this case). The satellite facing
-side hostname is the hostname the coms handler expects to connect to. Using these command line arguments the user can run the simulated satellite on the same device as the
-groundstation software with using hardware, the flight side with hardware, same device if no hardware is used, or a different device then the flight and groundstation software 
-altogether.
+All faults are **armed in advance** — you set a counter, and the next N qualifying packets trigger the fault automatically. There is no need to time your keystrokes to coincide with traffic.
+
+### Directions
+
+Every command takes a `<direction>` argument that controls which link leg is affected:
+
+| Direction | Meaning |
+|-----------|---------|
+| `gs` | Packets being delivered **to the ground station** (uplink replies, telemetry) |
+| `sat` | Packets being delivered **to the satellite** (commands, uplink data) |
+| `both` | Both legs simultaneously |
+
+Think of it as "who will *receive* the corrupted or missing packet."
+
+### Commands
+
+#### `corrupt <direction> <n>`
+Arms bit-flip corruption for the next `n` packets on the chosen link. Between 1 and 8 bits are flipped at random positions in each affected packet.
+
+```
+uhf-fault> corrupt sat 3
+  [CLI] Will corrupt next 3 packet(s) -> ['sat']
+```
+
+#### `drop <direction> <n>`
+Arms packet dropping for the next `n` packets. Dropped packets are silently discarded — the receiving side gets nothing, with no TCP error or disconnection.
+
+```
+uhf-fault> drop gs 1
+  [CLI] Will drop next 1 packet(s) -> ['gs']
+```
+
+#### `delay <direction> <n> <ms>`
+Arms an artificial delay for the next `n` packets. Each affected packet is held for `<ms>` milliseconds before forwarding. Useful for triggering timeout logic.
+
+```
+uhf-fault> delay both 2 500
+  [CLI] Will delay next 2 packet(s) by 500.0ms -> ['gs', 'sat']
+```
+
+#### `duplicate <direction> <n>`
+Arms duplication for the next `n` packets. Each affected packet is forwarded twice in immediate succession.
+
+```
+uhf-fault> duplicate sat 1
+  [CLI] Will duplicate next 1 packet(s) -> ['sat']
+```
+
+#### `status`
+Prints both the **pending** fault counters (faults still waiting to fire) and the **total fired** counts for the session.
+
+```
+uhf-fault> status
+
+  Pending faults:
+    [gs ] corrupt=0 drop=1 delay=0@0.0ms duplicate=0
+    [sat] corrupt=3 drop=0 delay=0@0.0ms duplicate=0
+
+  Total fired:
+    [gs ] corrupt=0 drop=2 delay=0 duplicate=1
+    [sat] corrupt=5 drop=0 delay=3 duplicate=0
+```
+
+#### `clear`
+Cancels all pending faults on both links immediately. Faults that have already fired are not affected (the total fired counts remain accurate).
+
+```
+uhf-fault> clear
+  [CLI] All pending faults cleared.
+```
+
+#### `help`
+Reprints the command reference.
+
+#### `quit` / `exit`
+Shuts down the simulator cleanly.
+
+---
+
+### Examples
+
+**Simulate a brief blackout window (satellite receives nothing for 5 commands):**
+```
+uhf-fault> drop sat 5
+```
+
+**Simulate a degraded RF link returning garbled telemetry to GS:**
+```
+uhf-fault> corrupt gs 10
+```
+
+**Test timeout handling — introduce a 2-second spike on both legs:**
+```
+uhf-fault> delay both 1 2000
+```
+
+**Simulate a multipath echo causing the satellite to receive a duplicate command:**
+```
+uhf-fault> duplicate sat 1
+```
+
+**Chain faults — corrupt one packet then drop the next:**
+```
+uhf-fault> corrupt sat 1
+uhf-fault> drop sat 1
+```
+> Note: fault counters are independent, so both are armed simultaneously. The first packet will be corrupted; the second will be dropped.
+
+**Check what's pending mid-test:**
+```
+uhf-fault> status
+```
+
+**Abort a test scenario cleanly:**
+```
+uhf-fault> clear
+```
+
+---
+
+## Fault Types Explained
+
+| Fault | What it does | What it tests |
+|-------|-------------|---------------|
+| **corrupt** | Flips 1–8 random bits in the packet payload | Checksum / CRC validation, malformed-packet handling, error detection |
+| **drop** | Discards the packet entirely, no indication to either side | Retry logic, timeout handling, sequence number recovery, watchdog behaviour |
+| **delay** | Holds the packet for N milliseconds before forwarding | Timeout thresholds, ordering sensitivity, queue depth under load |
+| **duplicate** | Sends the packet twice back-to-back | Idempotency of command handlers, deduplication logic, sequence tracking |
+
+Faults are applied **only to outgoing packets** (the moment data is about to leave the simulator toward a client). Incoming packets are always received and queued faithfully — this mirrors how a real radio impairment would manifest.
+
+Fault counters are **independent per type**. You can have `corrupt=3` and `drop=1` armed on `sat` at the same time; the drop check runs first, and if a packet is dropped, corruption is skipped for that packet.
+
+---
+
+## Testing Scenarios
+
+### Does the FSW retry after a dropped command?
+```
+uhf-fault> drop sat 1
+# Send a command from GS — satellite should not receive it
+# Observe whether FSW retransmits or GS times out and retries
+```
+
+### Does the FSW validate packet integrity?
+```
+uhf-fault> corrupt sat 5
+# Send several commands — FSW should detect and reject malformed packets
+# Check whether FSW logs errors or enters a fault state
+```
+
+### Does the GS handle a delayed telemetry response without crashing?
+```
+uhf-fault> delay gs 1 3000
+# Send a command that expects a telemetry reply within 2s
+# GS should time out gracefully, not hang
+```
+
+### Does the FSW handle duplicate commands safely (idempotency)?
+```
+uhf-fault> duplicate sat 3
+# Send 3 commands — FSW will receive each one twice
+# Verify commands are not executed twice (e.g. no double-fire of actuators)
+```
+
+### Simulate acquisition-of-signal / loss-of-signal boundary:
+```
+uhf-fault> drop both 10    # LOS window
+# ... wait ...
+uhf-fault> clear           # AOS restored
+```

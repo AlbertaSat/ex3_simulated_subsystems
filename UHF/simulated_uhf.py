@@ -34,13 +34,29 @@ Generally two different kind of usage for our purposes:
     Finally you can specify the IPV4 address for the UHF UART server to bind to using the following command:
         `python3 simulated_uhf.py --uart-ip <ground station IPV4 addr>`
 
+
+Fault Injection CLI Commands
+------------------------------
+  gs   = Ground Station side  (packets leaving toward the Radio/GS client)
+  sat  = Satellite side       (packets leaving toward the UART/SAT client)
+  both = both directions simultaneously
+
+  corrupt   <gs|sat|both> <n>           Flip random bits in the next N packets
+  drop      <gs|sat|both> <n>           Silently discard the next N packets
+  delay     <gs|sat|both> <n> <ms>      Hold next N packets for <ms> milliseconds
+  duplicate <gs|sat|both> <n>           Send each of the next N packets twice
+  status                                 Show pending faults and total fired counts
+  clear                                  Cancel all pending faults
+  help / quit / exit
 """
 
-import socket
-import threading
-import queue
-import time
 import argparse
+import queue
+import random
+import socket
+import sys
+import threading
+import time
 
 UART_PORT = 1805
 RADIO_PORT = 1808
@@ -57,6 +73,68 @@ BEACON_TX_MESSAGE = f"{BEACON_CALL_SIGN}{BEACON_TX_CONTENTS}"
 
 RELAY_SERVER_RECV_SIZE = 128
 
+class FaultState:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._state = {"gs": self._blank(), "sat": self._blank()}
+        self._stats = {
+            "gs":  {"corrupt": 0, "drop": 0, "delay": 0, "duplicate": 0},
+            "sat": {"corrupt": 0, "drop": 0, "delay": 0, "duplicate": 0},
+        }
+
+    @staticmethod
+    def _blank():
+        return {"corrupt": 0, "drop": 0, "delay": 0, "delay_ms": 0.0, "duplicate": 0}
+
+    def arm(self, fault, directions, count, delay_ms=0.0):
+        with self._lock:
+            for d in directions:
+                self._state[d][fault] = count
+                if fault == "delay":
+                    self._state[d]["delay_ms"] = delay_ms
+
+    def clear(self):
+        with self._lock:
+            for d in ("gs", "sat"):
+                self._state[d] = self._blank()
+
+    def apply_faults(self, direction, data):
+        drop = corrupt = duplicate = False
+        delay_ms = 0.0
+        with self._lock:
+            st = self._state[direction]
+            stats = self._stats[direction]
+            if st["drop"] > 0:
+                st["drop"] -= 1; stats["drop"] += 1; drop = True
+            if not drop:
+                if st["corrupt"] > 0:
+                    st["corrupt"] -= 1; stats["corrupt"] += 1; corrupt = True
+                if st["delay"] > 0:
+                    st["delay"] -= 1; stats["delay"] += 1; delay_ms = st["delay_ms"]
+                if st["duplicate"] > 0:
+                    st["duplicate"] -= 1; stats["duplicate"] += 1; duplicate = True
+        if drop:
+            return False, data, False
+        if corrupt:
+            data = _corrupt_bytes(data)
+        if delay_ms > 0:
+            time.sleep(delay_ms / 1000.0)
+        return True, data, duplicate
+
+    def status(self):
+        import copy
+        with self._lock:
+            return copy.deepcopy(self._state), copy.deepcopy(self._stats)
+
+def _corrupt_bytes(data):
+    if not data:
+        return data
+    ba = bytearray(data)
+    for _ in range(random.randint(1, min(8, len(ba)))):
+        ba[random.randrange(len(ba))] ^= 1 << random.randrange(8)
+    return bytes(ba)
+
+
 class RelayServer(threading.Thread):
     """
     Server daemon bound to a given port, and IP address.
@@ -72,7 +150,7 @@ class RelayServer(threading.Thread):
     Relay Server.
     """
 
-    def __init__(self, name, ipaddr, port, outbound_buffer, inbound_buffer):
+    def __init__(self, name, ipaddr, port, outbound_buffer, inbound_buffer, fault_state, fault_direction):
         """ Creates a Relay Server"""
         super().__init__(daemon=True)
         self.name = name
@@ -80,6 +158,8 @@ class RelayServer(threading.Thread):
         self.port = port
         self.outbound_buffer = outbound_buffer
         self.inbound_buffer = inbound_buffer
+        self.fault_state = fault_state
+        self.fault_direction = fault_direction
 
     def run(self):
         """
@@ -124,14 +204,24 @@ class RelayServer(threading.Thread):
                     return
                 print(f"[{self.name}] received: {data}")
                 self.outbound_buffer.put(data)
+
             except socket.timeout:
                 pass
 
             try:
                 while True:
                     msg = self.inbound_buffer.get_nowait()
+                    forward, msg, duplicate = self.fault_state.apply_faults(
+                        self.fault_direction, msg)
+                    if not forward:
+                        print(f"[{self.name}] FAULT DROP: packet silently discarded")
+                        continue
                     conn.sendall(msg)
                     print(f"[{self.name}] forwarded: {msg}")
+                    if duplicate:
+                        conn.sendall(msg)
+                        print(f"[{self.name}] FAULT DUPLICATE: packet sent twice")
+
             except queue.Empty:
                 pass
 
@@ -233,24 +323,122 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
+HELP_TEXT = """
+Fault Injection Commands
+------------------------
+  corrupt   <gs|sat|both> <n>           Corrupt next N packets
+  drop      <gs|sat|both> <n>           Drop (discard) next N packets
+  delay     <gs|sat|both> <n> <ms>      Delay next N packets by <ms> milliseconds
+  duplicate <gs|sat|both> <n>           Duplicate (echo) next N packets
+  status                                 Show pending faults and total fired counts
+  clear                                  Cancel all pending faults
+  help / quit / exit
+"""
+
+
+class FaultInjectionCLI(threading.Thread):
+    def __init__(self, fault_state):
+        super().__init__(daemon=True)
+        self.fault_state = fault_state
+
+    def run(self):
+        print(HELP_TEXT)
+        while True:
+            try:
+                raw = input("uhf-fault> ").strip()
+            except EOFError:
+                break
+            if not raw: continue
+            parts = raw.split()
+            try:
+                self._dispatch(parts[0].lower(), parts[1:])
+            except (ValueError, IndexError) as e:
+                print(f"  [CLI] parse error: {e}  -- type 'help' for usage")
+
+    def _dispatch(self, cmd, args):
+        if cmd == "help":
+            print(HELP_TEXT)
+        elif cmd in ("quit", "exit"):
+            print("Shutting down."); sys.exit(0)
+        elif cmd == "status":
+            state, stats = self.fault_state.status()
+            print("\n  Pending faults:")
+            for d in ("gs", "sat"):
+                s = state[d]
+                print(f"    [{d}] corrupt={s['corrupt']} drop={s['drop']}"
+                      f" delay={s['delay']}@{s['delay_ms']}ms duplicate={s['duplicate']}")
+            print("\n  Total fired:")
+            for d in ("gs", "sat"):
+                s = stats[d]
+                print(f"    [{d}] corrupt={s['corrupt']} drop={s['drop']}"
+                      f" delay={s['delay']} duplicate={s['duplicate']}")
+            print()
+        elif cmd == "clear":
+            self.fault_state.clear()
+            print("  [CLI] All pending faults cleared.")
+        elif cmd == "corrupt":
+            dirs, n = self._parse_dir_n(args)
+            self.fault_state.arm("corrupt", dirs, n)
+            print(f"  [CLI] Will corrupt next {n} packet(s) -> {dirs}")
+        elif cmd == "drop":
+            dirs, n = self._parse_dir_n(args)
+            self.fault_state.arm("drop", dirs, n)
+            print(f"  [CLI] Will drop next {n} packet(s) -> {dirs}")
+        elif cmd == "delay":
+            if len(args) < 3: raise IndexError("delay requires <direction> <n> <ms>")
+            dirs = self._parse_dirs(args[0])
+            self.fault_state.arm("delay", dirs, int(args[1]), delay_ms=float(args[2]))
+            print(f"  [CLI] Will delay next {args[1]} packet(s) by {args[2]}ms -> {dirs}")
+        elif cmd == "duplicate":
+            dirs, n = self._parse_dir_n(args)
+            self.fault_state.arm("duplicate", dirs, n)
+            print(f"  [CLI] Will duplicate next {n} packet(s) -> {dirs}")
+        else:
+            print(f"  [CLI] Unknown command '{cmd}'. Type 'help' for usage.")
+
+    @staticmethod
+    def _parse_dirs(token):
+        t = token.lower()
+        if t == "both": return ["gs", "sat"]
+        if t in ("gs", "sat"): return [t]
+        raise ValueError(f"direction must be gs/sat/both, got '{token}'")
+
+    def _parse_dir_n(self, args):
+        if len(args) < 2: raise IndexError("expected <direction> <n>")
+        dirs = self._parse_dirs(args[0])
+        n = int(args[1])
+        if n < 1: raise ValueError("n must be >= 1")
+        return dirs, n
+
+
 def main():
     """Starts the simulated UHF server daemons and waits forever"""
     args = parse_args()
-
     uart_buffer = queue.Queue()
     radio_buffer = queue.Queue()
+    fault_state  = FaultState()
 
-    uart_server = RelayServer("UHF Uart Server", args.uart_ip, UART_PORT, radio_buffer, uart_buffer)
-    radio_server = RelayServer("UHF Radio Server", args.radio_ip, RADIO_PORT, uart_buffer, radio_buffer)
-    beacon_server = BeaconServer("UHF Beacon Server", args.beacon_ip, BEACON_PORT, BEACON_TX_MESSAGE, BEACON_TX_PERIOD)
+    uart_server   = RelayServer("UHF Uart Server",  args.uart_ip,   UART_PORT,
+                                radio_buffer, uart_buffer,  fault_state, "sat")
+    radio_server  = RelayServer("UHF Radio Server", args.radio_ip,  RADIO_PORT,
+                                uart_buffer,  radio_buffer, fault_state, "gs")
+    beacon_server = BeaconServer("UHF Beacon Server", args.beacon_ip, BEACON_PORT,
+                                 BEACON_TX_MESSAGE, BEACON_TX_PERIOD)
+    cli = FaultInjectionCLI(fault_state)
 
     beacon_server.start()
     radio_server.start()
     uart_server.start()
+    cli.start()
 
     print("Simulated UHF up. Ctrl+C to stop.")
-    while True:
-        time.sleep(1)
+    # while True:
+    #     time.sleep(1)
+    try:
+        while True: time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nShutting down.")
 
 
 if __name__ == "__main__":

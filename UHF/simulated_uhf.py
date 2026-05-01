@@ -31,17 +31,19 @@ Generally two different kind of usage for our purposes:
     to the UART server. Consult your firewall program on how to expose a port, since you will
     need to expose the port for the simulated UHF UART server for the FSW to connect to.
 
-    Finally you can specify the IPV4 address for the UHF UART server to bind to using the following command:
+    Finally you can specify the IPV4 address for the UHF UART server to bind to using the following 
+    command:
         `python3 simulated_uhf.py --uart-ip <ground station IPV4 addr>`
 
 """
-
+# pylint: disable=too-many-arguments, too-many-positional-arguments, line-too-long, broad-exception-caught, pointless-string-statement
 import argparse
 import queue
 import socket
 import sys
 import threading
 import time
+import copy
 
 UART_PORT = 1805
 RADIO_PORT = 1808
@@ -59,7 +61,11 @@ BEACON_TX_MESSAGE = f"{BEACON_CALL_SIGN}{BEACON_TX_CONTENTS}"
 MAX_PAYLOAD_SIZE = 256
 
 class FaultState:
+    """
+    Keep track of and generate errors in data for transmitting by relay servers
+    """
     def __init__(self):
+        """ Initialize the FaultState object """
         self._lock = threading.Lock()
         self._state = {"gs": self._blank(), "sat": self._blank()}
         self._stats = {
@@ -69,9 +75,13 @@ class FaultState:
 
     @staticmethod
     def _blank():
+        """ Returns a blank state dictionary """
         return {"corrupt": 0, "drop": 0, "delay": 0, "offset": 0, "delay_ms": 0.0, "duplicate": 0}
 
     def arm(self, fault, directions, count, offset=0, delay_ms=0.0):
+        """
+        Arms the fault to be injected by modifying the state of the FaultState object
+        """
         with self._lock:
             for d in directions:
                 self._state[d][fault] = count
@@ -81,12 +91,21 @@ class FaultState:
                     self._state[d]["offset"] = offset
 
     def clear(self):
+        """ Clears all queued errors """
         with self._lock:
             for d in ("gs", "sat"):
                 self._state[d] = self._blank()
 
     def apply_faults(self, direction, data):
-        drop = corrupt = False
+        """
+        use the fault state to generate neccesary actions to take from fault
+        this function returns a 3 values:
+            1. bool: whether or not to forward the packet
+            2. bytes: the data to apply faults to
+            3. int: how many times to transmit the packet
+        """
+        drop = False
+        corrupt = False
         delay_ms = 0.0
         count = offset = 0
         duplicate = 1
@@ -95,17 +114,25 @@ class FaultState:
             st = self._state[direction]
             stats = self._stats[direction]
             if st["drop"] > 0:
-                st["drop"] -= 1; stats["drop"] += 1; drop = True
+                st["drop"] -= 1
+                stats["drop"] += 1
+                drop = True
             if not drop:
                 if st["corrupt"] > 0:
-                    count = st["corrupt"]; st["corrupt"] = 0;
-                    offset = st["offset"]; st["offset"] = 0;
-                    stats["corrupt"] += 1; corrupt = True;
+                    count = st["corrupt"]
+                    st["corrupt"] = 0
+                    offset = st["offset"]
+                    st["offset"] = 0
+                    stats["corrupt"] += 1
+                    corrupt = True
                 if st["delay"] > 0:
-                    st["delay"] -= 1; stats["delay"] += 1; delay_ms = st["delay_ms"]
+                    st["delay"] -= 1
+                    stats["delay"] += 1
+                    delay_ms = st["delay_ms"]
                 if st["duplicate"] > 0:
-                    duplicate = st["duplicate"]; st["duplicate"] = 0;
-                    stats["duplicate"] += 1;
+                    duplicate = st["duplicate"]
+                    st["duplicate"] = 0
+                    stats["duplicate"] += 1
 
         if drop:
             return False, data, False
@@ -116,11 +143,12 @@ class FaultState:
         return True, data, duplicate
 
     def status(self):
-        import copy
+        """ Get the status of queued faults and all previous faults """
         with self._lock:
             return copy.deepcopy(self._state), copy.deepcopy(self._stats)
 
 def _corrupt_bytes(data, count, offset):
+    """ Flip 'count' consecutive bits starting from 'offset' in data """
     if not data:
         return data
 
@@ -153,7 +181,8 @@ class RelayServer(threading.Thread):
     Relay Server.
     """
 
-    def __init__(self, name, ipaddr, port, outbound_buffer, inbound_buffer, fault_state, fault_direction):
+    def __init__(self, name, ipaddr, port, outbound_buffer,
+                 inbound_buffer, fault_state, fault_direction):
         """ Creates a Relay Server"""
         super().__init__(daemon=True)
         self.name = name
@@ -194,7 +223,8 @@ class RelayServer(threading.Thread):
         """
         Constantly polls both the client for incoming data, as well as the inbound
         buffer for any data. If data is sent by the client to the Relay server, pushed into
-        the outbound buffer. If any data is found in the inbound buffer, it is sent to the connected client.
+        the outbound buffer. If any data is found in the inbound buffer,
+        it is sent to the connected client.
 
         returns if the client has disconnected from the Relay Server.
         """
@@ -222,7 +252,8 @@ class RelayServer(threading.Thread):
                     for i in range(duplicate):
                         conn.sendall(msg)
                         print(f"[{self.name}] forwarded: {msg}")
-                        if i > 0: print(f"[{self.name}] FAULT DUPLICATE: packet sent {i + 1}/{duplicate} times") 
+                        if i > 0:
+                            print(f"[{self.name}] FAULT DUPLICATE: packet sent {i + 1}/{duplicate} times")
 
             except queue.Empty:
                 pass
@@ -240,7 +271,6 @@ class BeaconServer(threading.Thread):
         super().__init__(daemon=True)
         """
         Initialize a beacon server.
-
         Provide a port and ip address for port to bind to. 
         The given message will be transmitted to a connected
         client every 'interval' seconds (default 30s)
@@ -270,7 +300,7 @@ class BeaconServer(threading.Thread):
 
                 try:
                     self.handle_client(conn)
-                except Exception as e:
+                except BaseException as e:
                     print(f"[{self.name}] error: {e}")
                 finally:
                     conn.close()
@@ -339,18 +369,27 @@ Fault Injection Commands
 """
 
 class FaultInjectionCLI(threading.Thread):
+    """
+    CLI for listening to user input error injection commands and applying them to the FaultState
+    """
     def __init__(self, fault_state):
+        """ Initialize the fault injection cli thread """
         super().__init__(daemon=True)
         self.fault_state = fault_state
 
     def run(self):
+        """
+        Run the fault injection cli daemon. This Daemon will continually listen
+        for command line arguments and arm faults based on user input.
+        """
         print(HELP_TEXT)
         while True:
             try:
                 raw = input("uhf-fault> ").strip()
             except EOFError:
                 break
-            if not raw: continue
+            if not raw:
+                continue
             parts = raw.split()
             try:
                 self._dispatch(parts[0].lower(), parts[1:])
@@ -358,10 +397,14 @@ class FaultInjectionCLI(threading.Thread):
                 print(f"  [CLI] parse error: {e}  -- type 'help' for usage")
 
     def _dispatch(self, cmd, args):
+        """
+        parse the command, and arm the fault state
+        """
         if cmd == "help":
             print(HELP_TEXT)
         elif cmd in ("quit", "exit"):
-            print("Shutting down."); sys.exit(0)
+            print("Shutting down.")
+            sys.exit(0)
         elif cmd == "status":
             state, stats = self.fault_state.status()
             print("\n  Pending faults:")
@@ -388,7 +431,8 @@ class FaultInjectionCLI(threading.Thread):
             self.fault_state.arm("drop", dirs, n)
             print(f"  [CLI] Will drop next {n} packet(s) -> {dirs}")
         elif cmd == "delay":
-            if len(args) < 3: raise IndexError("delay requires <direction> <n> <ms>")
+            if len(args) < 3:
+                raise IndexError("delay requires <direction> <n> <ms>")
             dirs = self._parse_dirs(args[0])
             self.fault_state.arm("delay", dirs, int(args[1]), delay_ms=float(args[2]))
             print(f"  [CLI] Will delay next {args[1]} packet(s) by {args[2]}ms -> {dirs}")
@@ -401,22 +445,31 @@ class FaultInjectionCLI(threading.Thread):
 
     @staticmethod
     def _parse_dirs(token):
+        """parse the direction arg"""
         t = token.lower()
-        if t == "both": return ["gs", "sat"]
-        if t in ("gs", "sat"): return [t]
+        if t == "both":
+            return ["gs", "sat"]
+        if t in ("gs", "sat"):
+            return [t]
         raise ValueError(f"direction must be gs/sat/both, got '{token}'")
 
     def _parse_dir_n(self, args):
-        if len(args) < 2: raise IndexError("expected <direction> <n>")
+        """parse both direction and first arg"""
+        if len(args) < 2:
+            raise IndexError("expected <direction> <n>")
         dirs = self._parse_dirs(args[0])
         n = int(args[1])
-        if n < 1: raise ValueError("n must be >= 1")
+        if n < 1:
+            raise ValueError("n must be >= 1")
         return dirs, n
 
     def _parse_m(self, args):
-        if len(args) < 3: raise IndexError("expected <direction> <n> <m>")
+        """ parse the third argument to the error injection command """
+        if len(args) < 3:
+            raise IndexError("expected <direction> <n> <m>")
         m = int(args[2])
-        if m < 0 or m > MAX_PAYLOAD_SIZE * 8: raise ValueError("m must be between 0-{}", MAX_PAYLOAD_SIZE * 8)
+        if m < 0 or m > MAX_PAYLOAD_SIZE * 8:
+            raise ValueError(f"m must be between 0-{MAX_PAYLOAD_SIZE * 8}")
         return m
 
 
@@ -444,7 +497,8 @@ def main():
 
     print("Simulated UHF up. Ctrl+C to stop.")
     try:
-        while True: time.sleep(1)
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\nShutting down.")
 

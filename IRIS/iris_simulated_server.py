@@ -24,7 +24,7 @@ END_FLAG = "|END|"
 
 LOGGER_FORMAT = "%(asctime)s: %(message)s"
 
-Iris = iris_subsystem.IRISSubsystem()
+IRIS = iris_subsystem.IRISSubsystem()
 
 def input_listen(port, message_buffer, reply_buffer):
     """ Creates a socket and begins a server that continuously listens for connection
@@ -139,7 +139,7 @@ def command_handler(message_buffer, response_buffer):
         command = iris_subsystem.Command(args)
 
 
-        state = Iris.execute_command(command)
+        state = IRIS.execute_command(command)
 
         # Only when the command is requesting a response should response be given
         logging.info(state)
@@ -185,3 +185,4 @@ __copyright__ = """
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License."""
+

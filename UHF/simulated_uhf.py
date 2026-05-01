@@ -34,20 +34,6 @@ Generally two different kind of usage for our purposes:
     Finally you can specify the IPV4 address for the UHF UART server to bind to using the following command:
         `python3 simulated_uhf.py --uart-ip <ground station IPV4 addr>`
 
-
-Fault Injection CLI Commands
-------------------------------
-  gs   = Ground Station side  (packets leaving toward the Radio/GS client)
-  sat  = Satellite side       (packets leaving toward the UART/SAT client)
-  both = both directions simultaneously
-
-  corrupt   <gs|sat|both> <n>           Flip random bits in the next N packets
-  drop      <gs|sat|both> <n>           Silently discard the next N packets
-  delay     <gs|sat|both> <n> <ms>      Hold next N packets for <ms> milliseconds
-  duplicate <gs|sat|both> <n>           Send each of the next N packets twice
-  status                                 Show pending faults and total fired counts
-  clear                                  Cancel all pending faults
-  help / quit / exit
 """
 
 import argparse
@@ -71,7 +57,7 @@ BEACON_CALL_SIGN = "VE6 LRN"
 BEACON_TX_CONTENTS = "beacon"
 BEACON_TX_MESSAGE = f"{BEACON_CALL_SIGN}{BEACON_TX_CONTENTS}"
 
-RELAY_SERVER_RECV_SIZE = 128
+MAX_PAYLOAD_SIZE = 256
 
 class FaultState:
     def __init__(self):
@@ -84,14 +70,16 @@ class FaultState:
 
     @staticmethod
     def _blank():
-        return {"corrupt": 0, "drop": 0, "delay": 0, "delay_ms": 0.0, "duplicate": 0}
+        return {"corrupt": 0, "drop": 0, "delay": 0, "offset": 0, "delay_ms": 0.0, "duplicate": 0}
 
-    def arm(self, fault, directions, count, delay_ms=0.0):
+    def arm(self, fault, directions, count, offset=0, delay_ms=0.0):
         with self._lock:
             for d in directions:
                 self._state[d][fault] = count
                 if fault == "delay":
                     self._state[d]["delay_ms"] = delay_ms
+                if fault == "corrupt":
+                    self._state[d]["offset"] = offset
 
     def clear(self):
         with self._lock:
@@ -99,8 +87,11 @@ class FaultState:
                 self._state[d] = self._blank()
 
     def apply_faults(self, direction, data):
-        drop = corrupt = duplicate = False
+        drop = corrupt = False
         delay_ms = 0.0
+        count = offset = 0
+        duplicate = 1
+
         with self._lock:
             st = self._state[direction]
             stats = self._stats[direction]
@@ -108,15 +99,19 @@ class FaultState:
                 st["drop"] -= 1; stats["drop"] += 1; drop = True
             if not drop:
                 if st["corrupt"] > 0:
-                    st["corrupt"] -= 1; stats["corrupt"] += 1; corrupt = True
+                    count = st["corrupt"]; st["corrupt"] = 0;
+                    offset = st["offset"]; st["offset"] = 0;
+                    stats["corrupt"] += 1; corrupt = True;
                 if st["delay"] > 0:
                     st["delay"] -= 1; stats["delay"] += 1; delay_ms = st["delay_ms"]
                 if st["duplicate"] > 0:
-                    st["duplicate"] -= 1; stats["duplicate"] += 1; duplicate = True
+                    duplicate = st["duplicate"]; st["duplicate"] = 0;
+                    stats["duplicate"] += 1;
+
         if drop:
             return False, data, False
         if corrupt:
-            data = _corrupt_bytes(data)
+            data = _corrupt_bytes(data, count, offset)
         if delay_ms > 0:
             time.sleep(delay_ms / 1000.0)
         return True, data, duplicate
@@ -126,12 +121,21 @@ class FaultState:
         with self._lock:
             return copy.deepcopy(self._state), copy.deepcopy(self._stats)
 
-def _corrupt_bytes(data):
+def _corrupt_bytes(data, count, offset):
     if not data:
         return data
+
     ba = bytearray(data)
-    for _ in range(random.randint(1, min(8, len(ba)))):
-        ba[random.randrange(len(ba))] ^= 1 << random.randrange(8)
+    total_bits = len(ba) * 8
+
+    for i in range(count):
+        bit_pos = offset + i
+        if bit_pos >= total_bits:
+            break
+        byte_idx = bit_pos // 8
+        bit_idx  = 7 - (bit_pos % 8)
+        ba[byte_idx] ^= (1 << bit_idx)
+
     return bytes(ba)
 
 
@@ -199,7 +203,7 @@ class RelayServer(threading.Thread):
 
         while True:
             try:
-                data = conn.recv(RELAY_SERVER_RECV_SIZE)
+                data = conn.recv(MAX_PAYLOAD_SIZE)
                 if not data:
                     return
                 print(f"[{self.name}] received: {data}")
@@ -216,11 +220,10 @@ class RelayServer(threading.Thread):
                     if not forward:
                         print(f"[{self.name}] FAULT DROP: packet silently discarded")
                         continue
-                    conn.sendall(msg)
-                    print(f"[{self.name}] forwarded: {msg}")
-                    if duplicate:
+                    for i in range(duplicate):
                         conn.sendall(msg)
-                        print(f"[{self.name}] FAULT DUPLICATE: packet sent twice")
+                        print(f"[{self.name}] forwarded: {msg}")
+                        if i > 0: print(f"[{self.name}] FAULT DUPLICATE: packet sent {i + 1}/{duplicate} times") 
 
             except queue.Empty:
                 pass
@@ -327,15 +330,14 @@ def parse_args():
 HELP_TEXT = """
 Fault Injection Commands
 ------------------------
-  corrupt   <gs|sat|both> <n>           Corrupt next N packets
-  drop      <gs|sat|both> <n>           Drop (discard) next N packets
+  corrupt   <gs|sat|both> <n> <m>       Corrupt N bits in the next packet starting at bit M
+  drop      <gs|sat|both> <n>           Drop next N packets
   delay     <gs|sat|both> <n> <ms>      Delay next N packets by <ms> milliseconds
-  duplicate <gs|sat|both> <n>           Duplicate (echo) next N packets
+  duplicate <gs|sat|both> <n>           Duplicate next packet N times
   status                                 Show pending faults and total fired counts
   clear                                  Cancel all pending faults
   help / quit / exit
 """
-
 
 class FaultInjectionCLI(threading.Thread):
     def __init__(self, fault_state):
@@ -379,8 +381,9 @@ class FaultInjectionCLI(threading.Thread):
             print("  [CLI] All pending faults cleared.")
         elif cmd == "corrupt":
             dirs, n = self._parse_dir_n(args)
-            self.fault_state.arm("corrupt", dirs, n)
-            print(f"  [CLI] Will corrupt next {n} packet(s) -> {dirs}")
+            m = self._parse_m(args)
+            self.fault_state.arm("corrupt", dirs, n, offset=m)
+            print(f"  [CLI] Will corrupt {n} bits at bit offset {m} next packet -> {dirs}")
         elif cmd == "drop":
             dirs, n = self._parse_dir_n(args)
             self.fault_state.arm("drop", dirs, n)
@@ -393,7 +396,7 @@ class FaultInjectionCLI(threading.Thread):
         elif cmd == "duplicate":
             dirs, n = self._parse_dir_n(args)
             self.fault_state.arm("duplicate", dirs, n)
-            print(f"  [CLI] Will duplicate next {n} packet(s) -> {dirs}")
+            print(f"  [CLI] Will duplicate next packet {n} times -> {dirs}")
         else:
             print(f"  [CLI] Unknown command '{cmd}'. Type 'help' for usage.")
 
@@ -410,6 +413,14 @@ class FaultInjectionCLI(threading.Thread):
         n = int(args[1])
         if n < 1: raise ValueError("n must be >= 1")
         return dirs, n
+
+    def _parse_m(self, args):
+        if len(args) < 3: raise IndexError("expected <direction> <n> <m>")
+        m = int(args[2])
+        if m < 0 or m > MAX_PAYLOAD_SIZE * 8: raise ValueError("m must be between 0-{}", MAX_PAYLOAD_SIZE * 8)
+        return m
+
+
 
 
 def main():
@@ -433,8 +444,6 @@ def main():
     cli.start()
 
     print("Simulated UHF up. Ctrl+C to stop.")
-    # while True:
-    #     time.sleep(1)
     try:
         while True: time.sleep(1)
     except KeyboardInterrupt:

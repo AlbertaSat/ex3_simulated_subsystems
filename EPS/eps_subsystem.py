@@ -114,9 +114,9 @@ if __name__ == "__main__":
                         print("Client disconnected.")
                         break
 
-                    RESPONSE = eps.handle_command(data)
-                    if RESPONSE:
-                        conn.sendall((RESPONSE + "\n").encode())
+                    response = eps.handle_command(data)
+                    if response:
+                        conn.sendall((response + "\n").encode())
 
                 except ConnectionResetError:
                     print("Client disconnected abruptly.")

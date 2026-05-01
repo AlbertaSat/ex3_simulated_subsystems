@@ -54,13 +54,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
         # DFGM Tuple
         print("Mag Data: ")
-        MAG_TUPLE = "(" + str(int.from_bytes(data[36:38], "little")) + ", "
-        MAG_TUPLE += str(int.from_bytes(data[38:40], "little")) + ", "
-        MAG_TUPLE += str(int.from_bytes(data[40:42], "little")) + ", "
-        MAG_TUPLE += str(int.from_bytes(data[42:44], "little")) + ", "
-        MAG_TUPLE += str(int.from_bytes(data[44:46], "little")) + ", "
-        MAG_TUPLE += str(int.from_bytes(data[46:48], "little")) + ")"
-        print("\t" + MAG_TUPLE + " * 100 samples")
+        mag_tuple = "(" + str(int.from_bytes(data[36:38], "little")) + ", "
+        mag_tuple += str(int.from_bytes(data[38:40], "little")) + ", "
+        mag_tuple += str(int.from_bytes(data[40:42], "little")) + ", "
+        mag_tuple += str(int.from_bytes(data[42:44], "little")) + ", "
+        mag_tuple += str(int.from_bytes(data[44:46], "little")) + ", "
+        mag_tuple += str(int.from_bytes(data[46:48], "little")) + ")"
+        print("\t" + mag_tuple + " * 100 samples")
 
         # Board info
         print("Board ID: " + str(int.from_bytes(data[1236:1238], "little")))

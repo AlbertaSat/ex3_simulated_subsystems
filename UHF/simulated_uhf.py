@@ -38,7 +38,6 @@ Generally two different kind of usage for our purposes:
 
 import argparse
 import queue
-import random
 import socket
 import sys
 import threading

@@ -239,6 +239,8 @@ if __name__ == "__main__":
                     simulator.start()
             except BrokenPipeError as e:
                 print(f"Client connection closed: {e}")
+            except ConnectionResetError as e:
+                print(f"Client connection reset: {e}")
 
 # The following is program metadata
 __author__ = "Daniel Sacro"

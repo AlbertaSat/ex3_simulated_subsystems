@@ -45,6 +45,9 @@ import threading
 import time
 import copy
 
+from comms_handler import CommsHandler
+from key_store import ENCRYPTED_FRAME_OVERHEAD
+
 UART_PORT = 1805
 RADIO_PORT = 1808
 BEACON_PORT = 1809
@@ -58,7 +61,8 @@ BEACON_CALL_SIGN = "VE6 LRN"
 BEACON_TX_CONTENTS = "beacon"
 BEACON_TX_MESSAGE = f"{BEACON_CALL_SIGN}{BEACON_TX_CONTENTS}"
 
-MAX_PAYLOAD_SIZE = 256
+# Room for plaintext payloads plus AES-GCM nonce/tag overhead on uplink.
+MAX_PAYLOAD_SIZE = 256 + ENCRYPTED_FRAME_OVERHEAD
 
 class FaultState:
     """
@@ -182,7 +186,8 @@ class RelayServer(threading.Thread):
     """
 
     def __init__(self, name, ipaddr, port, outbound_buffer,
-                 inbound_buffer, fault_state, fault_direction):
+                 inbound_buffer, fault_state, fault_direction,
+                 comms_handler=None):
         """ Creates a Relay Server"""
         super().__init__(daemon=True)
         self.name = name
@@ -192,6 +197,8 @@ class RelayServer(threading.Thread):
         self.inbound_buffer = inbound_buffer
         self.fault_state = fault_state
         self.fault_direction = fault_direction
+        # Optional uplink decryptor used only on the satellite-facing path.
+        self.comms_handler = comms_handler
 
     def run(self):
         """
@@ -244,6 +251,17 @@ class RelayServer(threading.Thread):
             try:
                 while True:
                     msg = self.inbound_buffer.get_nowait()
+                    # Decrypt encrypted operator uplink before delivery to the
+                    # satellite. Downlink (gs direction) is left unchanged.
+                    if self.comms_handler is not None:
+                        plaintext = self.comms_handler.handle_uplink(msg)
+                        if plaintext is None:
+                            print(
+                                f"[{self.name}] uplink ignored "
+                                f"(replay/auth failure)"
+                            )
+                            continue
+                        msg = plaintext
                     forward, msg, duplicate = self.fault_state.apply_faults(
                         self.fault_direction, msg)
                     if not forward:
@@ -481,9 +499,12 @@ def main():
     uart_buffer = queue.Queue()
     radio_buffer = queue.Queue()
     fault_state  = FaultState()
+    # Decrypts GS→sat uplink; radio/gs path keeps downlink plaintext.
+    comms_handler = CommsHandler()
 
     uart_server   = RelayServer("UHF Uart Server",  args.uart_ip,   UART_PORT,
-                                radio_buffer, uart_buffer,  fault_state, "sat")
+                                radio_buffer, uart_buffer,  fault_state, "sat",
+                                comms_handler=comms_handler)
     radio_server  = RelayServer("UHF Radio Server", args.radio_ip,  RADIO_PORT,
                                 uart_buffer,  radio_buffer, fault_state, "gs")
     beacon_server = BeaconServer("UHF Beacon Server", args.beacon_ip, BEACON_PORT,
@@ -496,6 +517,7 @@ def main():
     cli.start()
 
     print("Simulated UHF up. Ctrl+C to stop.")
+    print("Encrypted uplink enabled (AES-256-GCM); downlink unchanged.")
     try:
         while True:
             time.sleep(1)

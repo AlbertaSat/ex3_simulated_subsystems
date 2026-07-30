@@ -1,9 +1,13 @@
 """ This program acts like a client to interact with the uhf tranceiver for testing purposes
 
-The port number for server is passed as a commmand line argument.
+The port number for server is passed as a command line argument.
 hostname is assumed to be local host.
 will listen and print any incoming messages to socket.
 can send messages back to server by simply writing a command in the terminal
+
+Uplink messages entered by the operator are encrypted with AES-256-GCM using
+a sequential nonce before they are sent. Downlink (received) messages are
+left unchanged and printed as plaintext.
 
 Copyright 2024 [Drake Boulianne]. Licensed under the Apache License, Version 2.0
 """
@@ -13,17 +17,25 @@ import socket
 import sys
 import threading
 
-def write_to_server(client, lock):
+from uplink_crypto import UplinkEncryptor
+
+
+def write_to_server(client, lock, encryptor):
     """
-    uses client and lock to communicate with server. messages are sent by reading 
-    standard input and the client sending all
+    uses client and lock to communicate with server. messages are sent by reading
+    standard input, encrypting them for uplink, and the client sending all
     """
     while True:
-        message = bytes(input(), "utf-8")
+        plaintext = bytes(input(), "utf-8")
         try:
+            message = encryptor.encrypt(plaintext)
             with lock:
                 client.sendall(message)
-                print(f"Sent {message}")
+                print(
+                    f"Sent encrypted uplink "
+                    f"(nonce={encryptor.next_counter - 1}, "
+                    f"{len(message)} bytes): {message.hex()}"
+                )
 
         except BrokenPipeError as e:
             print(f"Error sending data: {e}")
@@ -35,15 +47,15 @@ def write_to_server(client, lock):
             client.close()
             break
 
-BUFF_SIZE = 128
+BUFF_SIZE = 512
 
 def main():
 
-    """ main function that sets up generic client. The servers hostname will always be 
+    """ main function that sets up generic client. The servers hostname will always be
     the hosts name (as is in the simulated_uhf.py file) the desired port is given as a command
-    line arg. Client created will listen to messages indefinitely and be able to send messages to 
+    line arg. Client created will listen to messages indefinitely and be able to send messages to
     the server side client by way of the write thread.
-        
+
     Args:
         None
 
@@ -68,15 +80,22 @@ def main():
         print(f"Could not connect to hostname: {host} port: {port} - {e}")
         return -1
 
+    encryptor = UplinkEncryptor()
     client_lock = threading.Lock()
-    write_thread = threading.Thread(target=write_to_server, args=(client, client_lock))
+    write_thread = threading.Thread(
+        target=write_to_server, args=(client, client_lock, encryptor)
+    )
     write_thread.start()
 
     while True:
         try:
             msg = client.recv(BUFF_SIZE)
             if len(msg) > 0:
-                print(f"Received: {msg.decode('utf-8')}")
+                # Downlink remains plaintext / unchanged.
+                try:
+                    print(f"Received: {msg.decode('utf-8')}")
+                except UnicodeDecodeError:
+                    print(f"Received: {msg}")
 
         except BlockingIOError:
             continue
@@ -94,7 +113,7 @@ if __name__ == "__main__":
 
 # pylint: disable=duplicate-code
 # no error
-__author__ = "Drake Boulianne"
+__author__ = "Drake Boulianne, Samuel Olabode"
 __copyright__ = """
     Copyright (C) 2024, [Drake Boulianne]
     Licensed under the Apache License, Version 2.0 (the "License");

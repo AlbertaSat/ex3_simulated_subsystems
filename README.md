@@ -9,8 +9,11 @@ Simulated subsystems for use with the simulated software architecture in Alberta
 ### Documentation 
 - Each command the subsystem is expected to receive should be included in a tuple.
 
+### Subsystems
+| Directory | Port | Notes |
+|-----------|------|-------|
+| `SBAND/` | 1812 | Simulated S-Band HSTXC I2C register interface (TCP) |
+
 &nbsp;
 
 Please see Contributing_README.md for expectations with contributing, such as branch naming conventions and branching etiquette 
-
-

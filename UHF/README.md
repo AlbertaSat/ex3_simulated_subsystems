@@ -2,19 +2,28 @@
 
 Simulates a UHF transceiver radio as a set of TCP servers for testing satellite flight software without physical hardware. An interactive fault injection CLI lets you corrupt, drop, delay, or duplicate packets on either side of the link at any time during a test.
 
+Uplink (ground station → satellite) is encrypted with AES-256-GCM using sequential nonces for replay protection. Downlink (satellite → ground station) is unchanged plaintext.
+
 ---
 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
 2. [Architecture](#architecture)
-3. [Launch Options](#launch-options)
-4. [Fault Injection CLI](#fault-injection-cli)
-5. [Testing Scenarios](#testing-scenarios)
+3. [Encrypted Uplink](#encrypted-uplink)
+4. [Launch Options](#launch-options)
+5. [Fault Injection CLI](#fault-injection-cli)
+6. [Testing Scenarios](#testing-scenarios)
 
 ---
 
 ## Quick Start
+
+Install Python dependencies from the repository root:
+
+```bash
+pip install -r requirements.txt
+```
 
 **Fully simulated — single machine, no hardware:**
 ```bash
@@ -36,6 +45,12 @@ Once running, the fault injection prompt appears immediately:
 uhf-fault>
 ```
 
+Use `generic_client.py` against the radio port (`1808`) to send encrypted operator uplink:
+
+```bash
+python3 generic_client.py 1808
+```
+
 ---
 
 ## Architecture
@@ -46,14 +61,16 @@ The simulator exposes three TCP servers. The ground station client connects to t
 Ground Station Client               Satellite / FSW Client
         │                                     │
         │ TCP :1808                           │ TCP :1805
+        │ (encrypt uplink)                    │ (plaintext downlink)
         ▼                                     ▼
  ┌──────────────┐    radio_buffer    ┌──────────────┐
  │ Radio Server │ ─────────────────► │  UART Server │
  │   (GS side)  │ ◄───────────────── │  (SAT side)  │
- └──────────────┘    uart_buffer     └──────────────┘
-                            │
-                     ┌──────┴──────┐
-                     │ FaultState  │ ◄── CLI thread arms faults here
+ └──────────────┘    uart_buffer     └──────┬───────┘
+                            │               │
+                     ┌──────┴──────┐  CommsHandler decrypts
+                     │ FaultState  │  uplink, rejects replays
+                     │             │ ◄── CLI thread arms faults here
                      └─────────────┘
 
  Beacon Server (:1809) — independently transmits call sign every 30s
@@ -66,6 +83,23 @@ Ground Station Client               Satellite / FSW Client
 | 1805 | UART Server | Satellite / FSW |
 | 1808 | Radio Server | Ground station |
 | 1809 | Beacon Server | Ground station |
+
+---
+
+## Encrypted Uplink
+
+Operator messages are encrypted before they leave the ground-station client. The UART server's `CommsHandler` parses the sequential nonce, decrypts with AES-256-GCM, and ignores frames that reuse a previous nonce. Downlink bytes are not encrypted or decrypted by this path.
+
+**Frame format:** `nonce (12 bytes, big-endian counter) || ciphertext || tag (16 bytes)`
+
+**Key storage:**
+
+| Source | Description |
+|--------|-------------|
+| `UHF_AES256_KEY` env var | Preferred. 64 hex characters (32 raw bytes). |
+| `UHF/keys/dev_aes256.key` | Development placeholder only. Replace for non-dev use. |
+
+This Python path mirrors the planned flight-software use of AES-256-GCM (`aes-gcm` / Aes256Gcm) with sequential nonces as a message counter.
 
 ---
 
@@ -154,6 +188,15 @@ Print command reference or shut down the simulator.
 
 ## Testing Scenarios
 
+### does encrypted uplink decrypt on the satellite side?
+Start `simulated_uhf.py`, connect a sat-side client to `:1805`, and send from `generic_client.py 1808`. The UART client should receive the original plaintext; the radio path carries ciphertext.
+
+### does the CommsHandler reject a replayed uplink?
+```
+uhf-fault> duplicate sat 2
+```
+The second copy of an encrypted uplink reuses the same nonce and is ignored by `CommsHandler` before it reaches the satellite client.
+
 ### does the satellite retry after a dropped command?
 ```
 uhf-fault> drop sat 1
@@ -166,7 +209,7 @@ Send a command from the GS. The satellite receives nothing. Observe whether the 
 ```
 uhf-fault> corrupt sat 8 0
 ```
-Corrupts the first byte of the next command sent to the satellite. The FSW should detect a bad checksum and reject it rather than acting on garbage data.
+Corrupts the first byte of the next command sent to the satellite. With encryption enabled this will typically fail AES-GCM authentication and be ignored by `CommsHandler` rather than forwarded as garbage.
 
 To target a specific field in your packet structure, calculate the bit offset of that field and use it as `m`. For example, to corrupt 4 bits starting at byte 2:
 ```
@@ -187,7 +230,7 @@ If the GS expects a reply within 2 seconds, this will cause it to time out. Veri
 ```
 uhf-fault> duplicate sat 2
 ```
-The satellite receives the next command twice. Verify the FSW doesn't execute it twice (e.g. no double-fire of an actuator, no double-increment of a counter).
+For encrypted uplink, the duplicate is dropped by nonce checking. For plaintext downlink / non-encrypted experiments, verify the FSW doesn't execute twice.
 
 ---
 

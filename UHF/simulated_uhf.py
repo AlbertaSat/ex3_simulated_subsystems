@@ -170,7 +170,7 @@ def _corrupt_bytes(data, count, offset):
     return bytes(ba)
 
 
-class RelayServer(threading.Thread):
+class RelayServer(threading.Thread):  # pylint: disable=too-many-instance-attributes
     """
     Server daemon bound to a given port, and IP address.
 

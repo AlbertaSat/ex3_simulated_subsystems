@@ -51,11 +51,6 @@ RADIO_PORT = 1808
 UART_IPADDR = "127.0.0.1"
 RADIO_IPADDR = "127.0.0.1"
 
-BEACON_TX_PERIOD = 30
-BEACON_CALL_SIGN = "VE6 LRN"
-BEACON_TX_CONTENTS = "beacon"
-BEACON_TX_MESSAGE = f"{BEACON_CALL_SIGN}{BEACON_TX_CONTENTS}"
-
 MAX_PAYLOAD_SIZE = 256
 
 class FaultState:
@@ -278,13 +273,6 @@ def parse_args():
         type=str,
         default=UART_IPADDR,
         help=f"Change the IP address the Uart Server binds to (default: {UART_IPADDR})"
-    )
-
-    parser.add_argument(
-        "--beacon-ip",
-        type=str,
-        default=BEACON_IPADDR,
-        help=f"Change the IP address the Beacon Server binds to (default: {BEACON_IPADDR})"
     )
 
     args = parser.parse_args()

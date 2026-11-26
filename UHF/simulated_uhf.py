@@ -47,16 +47,9 @@ import copy
 
 UART_PORT = 1805
 RADIO_PORT = 1808
-BEACON_PORT = 1809
 
 UART_IPADDR = "127.0.0.1"
 RADIO_IPADDR = "127.0.0.1"
-BEACON_IPADDR = "127.0.0.1"
-
-BEACON_TX_PERIOD = 30
-BEACON_CALL_SIGN = "VE6 LRN"
-BEACON_TX_CONTENTS = "beacon"
-BEACON_TX_MESSAGE = f"{BEACON_CALL_SIGN}{BEACON_TX_CONTENTS}"
 
 MAX_PAYLOAD_SIZE = 256
 
@@ -259,69 +252,6 @@ class RelayServer(threading.Thread):
                 pass
 
 
-class BeaconServer(threading.Thread):
-    """
-    A server that periodically transmits a predefined message to the connected client.
-
-    The Beacon Server daemon does not listen for any data sent by the client.
-
-    The Beacon Server supports reconnection if the connection is lost.
-    """
-    def __init__(self, name, ipaddr, port, message, interval=30):
-        super().__init__(daemon=True)
-        """
-        Initialize a beacon server.
-        Provide a port and ip address for port to bind to. 
-        The given message will be transmitted to a connected
-        client every 'interval' seconds (default 30s)
-        """
-        self.name = name
-        self.ipaddr = ipaddr
-        self.port = port
-        self.message = message
-        self.interval = interval
-
-    def run(self):
-        """
-        Run the beacon server daemon.
-
-        This will create a TCP socket and bind it to the BeaconServer's address and port.
-        Only a single client can connect to the server at a time. BeaconServer allows for clients to 
-        disconnect and reconnect without restarting the server.
-        """
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as srv:
-            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            srv.bind((self.ipaddr, self.port))
-            srv.listen(1)
-
-            while True:
-                conn, addr = srv.accept()
-                print(f"[{self.name}] client connected: {addr}")
-
-                try:
-                    self.handle_client(conn)
-                except BaseException as e:
-                    print(f"[{self.name}] error: {e}")
-                finally:
-                    conn.close()
-                    print(f"[{self.name}] client disconnected")
-
-    def handle_client(self, conn: socket.socket):
-        """
-        Sends the connected client the given beacon message after every "interval" seconds.
-        """
-        conn.settimeout(1.0)
-
-        while True:
-            try:
-                conn.sendall(self.message.encode('utf-8'))
-                print(f"{self.name} transmit beacon")
-                time.sleep(self.interval)
-            except (BrokenPipeError, ConnectionResetError, OSError):
-                print(f"{self.name}: client disconnected")
-                return
-
-
 def parse_args():
     """
     Parses command line arguments. Use '--help' flag for more information on usage and description.
@@ -343,13 +273,6 @@ def parse_args():
         type=str,
         default=UART_IPADDR,
         help=f"Change the IP address the Uart Server binds to (default: {UART_IPADDR})"
-    )
-
-    parser.add_argument(
-        "--beacon-ip",
-        type=str,
-        default=BEACON_IPADDR,
-        help=f"Change the IP address the Beacon Server binds to (default: {BEACON_IPADDR})"
     )
 
     args = parser.parse_args()
@@ -486,11 +409,8 @@ def main():
                                 radio_buffer, uart_buffer,  fault_state, "sat")
     radio_server  = RelayServer("UHF Radio Server", args.radio_ip,  RADIO_PORT,
                                 uart_buffer,  radio_buffer, fault_state, "gs")
-    beacon_server = BeaconServer("UHF Beacon Server", args.beacon_ip, BEACON_PORT,
-                                 BEACON_TX_MESSAGE, BEACON_TX_PERIOD)
     cli = FaultInjectionCLI(fault_state)
 
-    beacon_server.start()
     radio_server.start()
     uart_server.start()
     cli.start()
